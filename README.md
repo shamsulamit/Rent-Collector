@@ -1,0 +1,2 @@
+# Rent Collector
+a rent collection app with features including room/flat listing, tenant list, bill generation, bill history, monthly bill list, and monthly total rent calculations (including electricity, other expenses, due or overpaid amounts). Fixed utility fields like waste_expense, water_expense, electricity_expense are saved in the tenants table. User wants rent-related data (amounts in taka) to be sourced from this tenant data in future conversations.
