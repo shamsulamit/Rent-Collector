@@ -15,11 +15,14 @@ use App\Models\Tariff;
 use App\Models\Tenancy;
 use App\Models\Tenant;
 use App\Models\Unit;
+use App\Models\User;
 use App\Models\WaterBill;
 use App\Services\Billing\BillingService;
 use App\Services\Electricity\TariffService;
 use App\Services\Payments\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -392,5 +395,173 @@ class AcceptanceTest extends TestCase
         $this->assertEquals($oldTariff->id, $julyBill->tariff_id);
         $this->assertEquals($newTariff->id, $augBill->tariff_id);
         $this->assertLessThan((float) $augBill->total, (float) $julyBill->total);
+    }
+
+    public function test_10_calculated_electricity_bill_can_be_deleted(): void
+    {
+        $s = $this->makeSetup();
+        $july = now()->subMonth()->format('Y-m');
+
+        $julyReading = MeterReading::create([
+            'meter_id' => $s['meter']->id,
+            'property_id' => $s['property']->id,
+            'unit_id' => $s['unit']->id,
+            'tenant_id' => $s['tenant']->id,
+            'tenancy_id' => $s['tenancy']->id,
+            'billing_month' => $july,
+            'previous_reading' => 1250,
+            'current_reading' => 1410,
+            'usage' => 160,
+            'status' => 'submitted',
+        ]);
+
+        $tariff = Tariff::create([
+            'name' => 'Delete Test Tariff',
+            'provider' => 'DESCO',
+            'utility' => 'electricity',
+            'meter_type' => 'postpaid',
+            'effective_date' => now()->subYear()->toDateString(),
+            'slabs' => [['min' => 0, 'max' => null, 'rate' => 6.50]],
+            'fixed_charge' => 200,
+            'vat_rate' => 5,
+        ]);
+
+        $bill = app(TariffService::class)->calculate($s['meter'], $julyReading, $tariff);
+        $this->assertEquals('calculated', $bill->status);
+
+        $bill->delete();
+
+        $this->assertNull(ElectricityBill::find($bill->id));
+        $this->assertDatabaseMissing('electricity_bills', ['id' => $bill->id]);
+    }
+
+    public function test_11_finalized_electricity_bill_cannot_be_deleted(): void
+    {
+        $s = $this->makeSetup();
+        $july = now()->subMonth()->format('Y-m');
+
+        $julyReading = MeterReading::create([
+            'meter_id' => $s['meter']->id,
+            'property_id' => $s['property']->id,
+            'unit_id' => $s['unit']->id,
+            'tenant_id' => $s['tenant']->id,
+            'tenancy_id' => $s['tenancy']->id,
+            'billing_month' => $july,
+            'previous_reading' => 1250,
+            'current_reading' => 1410,
+            'usage' => 160,
+            'status' => 'submitted',
+        ]);
+
+        $tariff = Tariff::create([
+            'name' => 'Finalize Test Tariff',
+            'provider' => 'DESCO',
+            'utility' => 'electricity',
+            'meter_type' => 'postpaid',
+            'effective_date' => now()->subYear()->toDateString(),
+            'slabs' => [['min' => 0, 'max' => null, 'rate' => 6.50]],
+            'fixed_charge' => 200,
+            'vat_rate' => 5,
+        ]);
+
+        $bill = app(TariffService::class)->calculate($s['meter'], $julyReading, $tariff);
+        app(TariffService::class)->finalize($bill);
+
+        $this->assertTrue($bill->isImmutable());
+        $this->expectException(\DomainException::class);
+        $bill->delete();
+    }
+
+    public function test_12_owner_can_delete_calculated_electricity_bill_via_ui(): void
+    {
+        $s = $this->makeSetup();
+        $month = now()->format('Y-m');
+
+        $reading = MeterReading::create([
+            'meter_id' => $s['meter']->id,
+            'property_id' => $s['property']->id,
+            'unit_id' => $s['unit']->id,
+            'tenant_id' => $s['tenant']->id,
+            'tenancy_id' => $s['tenancy']->id,
+            'billing_month' => $month,
+            'previous_reading' => 1250,
+            'current_reading' => 1410,
+            'usage' => 160,
+            'status' => 'submitted',
+        ]);
+
+        $tariff = Tariff::create([
+            'name' => 'UI Delete Tariff',
+            'provider' => 'DESCO',
+            'utility' => 'electricity',
+            'meter_type' => 'postpaid',
+            'effective_date' => now()->subYear()->toDateString(),
+            'slabs' => [['min' => 0, 'max' => null, 'rate' => 6.50]],
+            'fixed_charge' => 200,
+            'vat_rate' => 5,
+        ]);
+
+        $bill = app(TariffService::class)->calculate($s['meter'], $reading, $tariff);
+
+        $owner = User::create([
+            'name' => 'Owner',
+            'email' => 'owner-delete@test.com',
+            'password' => bcrypt('password'),
+        ]);
+        $owner->assignRole(Role::firstOrCreate(['name' => 'owner']));
+
+        Livewire::actingAs($owner)
+            ->test(\App\Livewire\Meters\BulkReadings::class)
+            ->set('month', $month)
+            ->call('deleteElectricityBill', $s['meter']->id);
+
+        $this->assertNull(ElectricityBill::find($bill->id));
+    }
+
+    public function test_13_finalized_bill_delete_via_ui_is_blocked(): void
+    {
+        $s = $this->makeSetup();
+        $month = now()->format('Y-m');
+
+        $reading = MeterReading::create([
+            'meter_id' => $s['meter']->id,
+            'property_id' => $s['property']->id,
+            'unit_id' => $s['unit']->id,
+            'tenant_id' => $s['tenant']->id,
+            'tenancy_id' => $s['tenancy']->id,
+            'billing_month' => $month,
+            'previous_reading' => 1250,
+            'current_reading' => 1410,
+            'usage' => 160,
+            'status' => 'submitted',
+        ]);
+
+        $tariff = Tariff::create([
+            'name' => 'UI Blocked Tariff',
+            'provider' => 'DESCO',
+            'utility' => 'electricity',
+            'meter_type' => 'postpaid',
+            'effective_date' => now()->subYear()->toDateString(),
+            'slabs' => [['min' => 0, 'max' => null, 'rate' => 6.50]],
+            'fixed_charge' => 200,
+            'vat_rate' => 5,
+        ]);
+
+        $bill = app(TariffService::class)->calculate($s['meter'], $reading, $tariff);
+        app(TariffService::class)->finalize($bill);
+
+        $owner = User::create([
+            'name' => 'Owner',
+            'email' => 'owner-blocked@test.com',
+            'password' => bcrypt('password'),
+        ]);
+        $owner->assignRole(Role::firstOrCreate(['name' => 'owner']));
+
+        Livewire::actingAs($owner)
+            ->test(\App\Livewire\Meters\BulkReadings::class)
+            ->set('month', $month)
+            ->call('deleteElectricityBill', $s['meter']->id);
+
+        $this->assertNotNull(ElectricityBill::find($bill->id));
     }
 }

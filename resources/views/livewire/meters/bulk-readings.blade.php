@@ -94,14 +94,24 @@
                         @if ($utility === 'electricity')
                             <td class="text-right tabular-nums text-brand-dark dark:text-brand-light">
                                 @if (is_numeric($row['current']))
-                                    ৳{{ number_format($chargeOf($meterId), 2) }}
+                                    ৳{{ number_format($this->chargeOf($meterId), 2) }}
                                 @else
                                     <span class="text-slate-300 dark:text-slate-600">—</span>
                                 @endif
                             </td>
                         @endif
                         <td>
-                            <x-status-badge :label="ucfirst($row['status'])" color="{{ $row['status'] === 'submitted' ? 'emerald' : ($row['status'] === 'finalized' ? 'indigo' : 'slate') }}" />
+                            <div class="flex items-center justify-end gap-2">
+                                <x-status-badge :label="ucfirst($row['status'])" color="{{ $row['status'] === 'submitted' ? 'emerald' : ($row['status'] === 'finalized' ? 'indigo' : 'slate') }}" />
+                                @if ($utility === 'electricity' && isset($row['bill']) && $row['bill'] && ! $row['bill']->isImmutable())
+                                    <button wire:click="deleteElectricityBill('{{ $meterId }}')"
+                                            wire:confirm="Delete the calculated electricity bill for this meter and month? This cannot be undone."
+                                            class="rounded-lg border border-rose-300 px-2 py-0.5 text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950"
+                                            wire:loading.attr="disabled">
+                                        Delete
+                                    </button>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -140,9 +150,17 @@
                         <strong>{{ is_numeric($row['current']) ? number_format(max(0, (float) $row['current'] - (float) $row['previous']), 1) : '—' }}</strong>
                     </span>
                     @if ($utility === 'electricity')
-                        <span class="text-brand-dark dark:text-brand-light">Charge: <strong>৳{{ is_numeric($row['current']) ? number_format($chargeOf($meterId), 2) : '—' }}</strong></span>
+                        <span class="text-brand-dark dark:text-brand-light">Charge: <strong>৳{{ is_numeric($row['current']) ? number_format($this->chargeOf($meterId), 2) : '—' }}</strong></span>
                     @endif
                 </div>
+                @if ($utility === 'electricity' && isset($row['bill']) && $row['bill'] && ! $row['bill']->isImmutable())
+                    <button wire:click="deleteElectricityBill('{{ $meterId }}')"
+                            wire:confirm="Delete the calculated electricity bill for this meter and month? This cannot be undone."
+                            class="mt-3 w-full rounded-lg border border-rose-300 px-3 py-1.5 text-center text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950"
+                            wire:loading.attr="disabled">
+                        Delete Electricity Bill
+                    </button>
+                @endif
             </div>
         @empty
             <p class="col-span-full py-10 text-center text-slate-400">No active {{ $utility }} meters found.</p>

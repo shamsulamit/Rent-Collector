@@ -73,6 +73,8 @@ class BulkReadings extends Component
                 ?? $meter->lastReading($this->month)?->current_reading
                 ?? $meter->starting_reading;
 
+            $bill = $meter->electricityBills()->where('billing_month', $this->month)->first();
+
             $this->readings[$meter->id] = [
                 'meter' => $meter,
                 'previous' => (float) $previous,
@@ -80,6 +82,7 @@ class BulkReadings extends Component
                 'status' => $existing?->status ?? 'draft',
                 'note' => $existing?->notes ?? '',
                 'charge' => $existing?->usage ?? null,
+                'bill' => $bill,
             ];
         }
     }
@@ -176,6 +179,41 @@ class BulkReadings extends Component
                 'current' => $current,
             ]);
         }
+    }
+
+    public function deleteElectricityBill(string $meterId): void
+    {
+        if ($this->utility !== 'electricity') {
+            return;
+        }
+
+        $meter = Meter::findOrFail($meterId);
+        $bill = $meter->electricityBills()->where('billing_month', $this->month)->first();
+
+        if (! $bill) {
+            session()->flash('message', 'No electricity bill exists for this meter and month.');
+            return;
+        }
+
+        if ($bill->isImmutable()) {
+            session()->flash('error', 'This electricity bill is finalized and cannot be deleted.');
+            return;
+        }
+
+        $this->authorize('delete', $bill);
+
+        app(AuditService::class)->record(
+            'electricity_bill.deleted',
+            'ElectricityBill',
+            $bill->id,
+            null,
+            $bill->toArray()
+        );
+
+        $bill->delete();
+
+        session()->flash('message', 'Electricity bill deleted for '.$meter->meter_number.'.');
+        $this->loadRows();
     }
 
     public function calculateAll(): void

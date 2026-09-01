@@ -67,4 +67,13 @@ class ElectricityBill extends Model
     {
         return in_array($this->status, ['finalized', 'paid', 'partial', 'due', 'overpaid']);
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $bill) {
+            if ($bill->isImmutable()) {
+                throw new \DomainException('This electricity bill is finalized and cannot be deleted.');
+            }
+        });
+    }
 }
