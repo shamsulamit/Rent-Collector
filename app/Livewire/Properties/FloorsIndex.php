@@ -57,10 +57,26 @@ class FloorsIndex extends Component
         $this->reset('editingId');
     }
 
+    public function delete(string $id): void
+    {
+        $floor = Floor::findOrFail($id);
+        $this->authorize('update', $this->property);
+
+        if ($floor->units()->where('is_deleted', false)->exists()) {
+            session()->flash('error', 'Move or delete units on this floor first.');
+            return;
+        }
+
+        app(AuditService::class)->record('floor.deleted', 'Floor', $floor->id, null, $floor->toArray());
+        $floor->update(['is_deleted' => true, 'status' => 'inactive']);
+
+        session()->flash('message', 'Floor deleted.');
+    }
+
     public function render()
     {
         return view('livewire.properties.floors', [
-            'floors' => $this->property->floors()->withCount('units')->orderBy('name')->get(),
+            'floors' => $this->property->floors()->where('is_deleted', false)->withCount('units')->orderBy('name')->get(),
         ])->layout('layouts.app');
     }
 }

@@ -76,6 +76,22 @@ class TenantsIndex extends Component
         $this->reset('editingId');
     }
 
+    public function delete(string $id): void
+    {
+        $tenant = Tenant::findOrFail($id);
+        $this->authorize('delete', $tenant);
+
+        if ($tenant->activeTenancy) {
+            session()->flash('error', 'End the active tenancy before deleting this tenant.');
+            return;
+        }
+
+        app(AuditService::class)->record('tenant.deleted', 'Tenant', $tenant->id, null, $tenant->only(['full_name', 'phone', 'email']));
+        $tenant->update(['is_deleted' => true]);
+
+        session()->flash('message', 'Tenant deleted.');
+    }
+
     public function render()
     {
         $tenants = Tenant::query()

@@ -26,8 +26,12 @@
         </a>
 
         <div class="px-3 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Billing</div>
-        <a href="{{ route('meters.bulk-readings') }}" class="nav-link {{ request()->routeIs('meters.*') ? 'nav-link-active' : '' }}">
+        <a href="{{ route('meters.index') }}" class="nav-link {{ request()->routeIs('meters.index') ? 'nav-link-active' : '' }}">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v4m0 4v4m0 4v3m-6 2h12M6 21V3l6 4 6-4v18"/></svg>
+            Meters
+        </a>
+        <a href="{{ route('meters.bulk-readings') }}" class="nav-link {{ request()->routeIs('meters.bulk-readings') ? 'nav-link-active' : '' }}">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
             Meter Readings
         </a>
         <a href="{{ route('bills.index') }}" class="nav-link {{ request()->routeIs('bills.*') ? 'nav-link-active' : '' }}">

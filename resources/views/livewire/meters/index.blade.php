@@ -6,7 +6,9 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <a href="{{ route('meters.bulk-readings') }}" class="btn-secondary">Bulk Meter Entry</a>
-            <button wire:click="openCreate" class="btn-primary">Add Meter</button>
+            @can('create', \App\Models\Meter::class)
+                <button wire:click="openCreate" class="btn-primary">Add Meter</button>
+            @endcan
         </div>
     </div>
 
@@ -44,8 +46,11 @@
                         <td class="capitalize">{{ $meter->meter_type }}</td>
                         <td>{{ $meter->readings_count }}</td>
                         <td><x-status-badge :label="ucfirst($meter->status)" color="{{ $meter->status === 'active' ? 'emerald' : 'slate' }}" /></td>
-                        <td>
+                        <td class="whitespace-nowrap text-right">
                             <button wire:click="openEdit('{{ $meter->id }}')" class="btn-ghost px-2.5 py-1 text-xs">Edit</button>
+                            @can('delete', $meter)
+                                <button wire:click="delete('{{ $meter->id }}')" wire:confirm="Delete this meter?" class="btn-ghost px-2.5 py-1 text-xs text-rose-600 dark:text-rose-400">Delete</button>
+                            @endcan
                         </td>
                     </tr>
                 @empty

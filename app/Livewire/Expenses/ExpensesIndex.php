@@ -81,6 +81,17 @@ class ExpensesIndex extends Component
         $this->reset('editingId');
     }
 
+    public function delete(string $id): void
+    {
+        $expense = Expense::findOrFail($id);
+        $this->authorize('delete', $expense);
+
+        app(AuditService::class)->record('expense.deleted', 'Expense', $expense->id, null, $expense->toArray());
+        $expense->delete();
+
+        session()->flash('message', 'Expense deleted.');
+    }
+
     public function render()
     {
         $expenses = Expense::query()

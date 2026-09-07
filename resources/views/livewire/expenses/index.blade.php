@@ -40,7 +40,12 @@
                         <td>{{ $expense->vendor?->name ?? '—' }}</td>
                         <td class="capitalize">{{ $expense->payment_method }}</td>
                         <td class="text-right font-semibold tabular-nums">৳{{ number_format($expense->amount, 2) }}</td>
-                        <td><button wire:click="openEdit('{{ $expense->id }}')" class="btn-ghost px-2 py-1 text-xs">Edit</button></td>
+                        <td class="whitespace-nowrap text-right">
+                            <button wire:click="openEdit('{{ $expense->id }}')" class="btn-ghost px-2 py-1 text-xs">Edit</button>
+                            @can('delete', $expense)
+                                <button wire:click="delete('{{ $expense->id }}')" wire:confirm="Delete this expense?" class="btn-ghost px-2 py-1 text-xs text-rose-600 dark:text-rose-400">Delete</button>
+                            @endcan
+                        </td>
                     </tr>
                 @empty
                     <tr><td colspan="9" class="py-10 text-center text-slate-400">No expenses recorded.</td></tr>

@@ -78,6 +78,17 @@ class PropertiesIndex extends Component
         $this->reset('editingId');
     }
 
+    public function delete(string $id): void
+    {
+        $property = Property::findOrFail($id);
+        $this->authorize('delete', $property);
+
+        app(AuditService::class)->record('property.deleted', 'Property', $property->id, null, $property->toArray());
+        $property->update(['is_deleted' => true, 'status' => 'inactive']);
+
+        session()->flash('message', 'Property deleted.');
+    }
+
     public function render()
     {
         $properties = Property::query()

@@ -4,7 +4,6 @@ namespace App\Livewire\Users;
 
 use App\Models\User;
 use App\Services\AuditService;
-use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -24,12 +23,15 @@ class UsersIndex extends Component
         'role' => 'staff',
     ];
 
-    protected $rules = [
-        'form.name' => 'required|string|max:255',
-        'form.email' => 'required|email|max:255',
-        'form.password' => 'nullable|string|min:8',
-        'form.role' => 'required|in:owner,manager,accountant,staff',
-    ];
+    protected function rules(): array
+    {
+        return [
+            'form.name' => 'required|string|max:255',
+            'form.email' => 'required|email|max:255|unique:users,email,'.($this->editingId ?: 'NULL'),
+            'form.password' => $this->editingId ? 'nullable|string|min:8' : 'required|string|min:8',
+            'form.role' => 'required|in:owner,manager,accountant,staff',
+        ];
+    }
 
     public function openCreate(): void
     {
@@ -65,17 +67,19 @@ class UsersIndex extends Component
         ];
 
         if ($this->form['password']) {
-            $data['password'] = Hash::make($this->form['password']);
+            $data['password'] = $this->form['password'];
         }
 
         if ($this->editingId) {
             $user = User::findOrFail($this->editingId);
+            $this->authorize('update', $user);
             $user->update($data);
             $user->syncRoles([$this->form['role']]);
             app(AuditService::class)->record('user.updated', 'User', $user->id, $data);
             session()->flash('message', 'User updated.');
         } else {
-            $user = User::create($data + ['password' => Hash::make($this->form['password'] ?? 'password123')]);
+            $this->authorize('create', User::class);
+            $user = User::create($data + ['password' => $this->form['password']]);
             $user->syncRoles([$this->form['role']]);
             app(AuditService::class)->record('user.created', 'User', $user->id, $data);
             session()->flash('message', 'User created.');
@@ -83,6 +87,23 @@ class UsersIndex extends Component
 
         $this->showForm = false;
         $this->reset('editingId');
+    }
+
+    public function delete(string $id): void
+    {
+        $user = User::findOrFail($id);
+
+        if ((int) $user->id === (int) auth()->id()) {
+            session()->flash('error', 'You cannot delete your own account.');
+            return;
+        }
+
+        $this->authorize('delete', $user);
+
+        app(AuditService::class)->record('user.deleted', 'User', $user->id, null, $user->only(['name', 'email']));
+        $user->delete();
+
+        session()->flash('message', 'User deleted.');
     }
 
     public function render()
@@ -98,6 +119,7 @@ class UsersIndex extends Component
 
         return view('livewire.users.index', [
             'users' => $users,
+            'roles' => array_keys(User::ROLES),
         ])->layout('layouts.app');
     }
 }

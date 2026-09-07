@@ -54,6 +54,9 @@
 
                 <div class="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-ink-700">
                     <button wire:click="openEdit('{{ $unit->id }}')" class="btn-ghost px-3 py-1.5 text-xs">Edit</button>
+                    @can('delete', $unit)
+                        <button wire:click="delete('{{ $unit->id }}')" wire:confirm="Delete this unit?" class="btn-ghost px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400">Delete</button>
+                    @endcan
                 </div>
             </div>
         @empty

@@ -47,10 +47,14 @@
                     </div>
                 </div>
 
-                <div class="mt-4 flex gap-2">
+                <div class="mt-4 flex flex-wrap gap-2">
                     <a href="{{ route('properties.show', $property) }}" class="btn-ghost flex-1">View</a>
                     <a href="{{ route('properties.floors', $property) }}" class="btn-ghost flex-1">Floors</a>
                     <a href="{{ route('properties.units', $property) }}" class="btn-ghost flex-1">Units</a>
+                    <button wire:click="openEdit('{{ $property->id }}')" class="btn-ghost flex-1">Edit</button>
+                    @can('delete', $property)
+                        <button wire:click="delete('{{ $property->id }}')" wire:confirm="Delete this property?" class="btn-ghost flex-1 text-rose-600 dark:text-rose-400">Delete</button>
+                    @endcan
                 </div>
             </div>
         @empty

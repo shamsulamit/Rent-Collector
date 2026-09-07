@@ -36,6 +36,7 @@
             <a href="{{ route('properties.index') }}" class="nav-link">Properties</a>
             <a href="{{ route('tenants.index') }}" class="nav-link">Tenants</a>
             <a href="{{ route('tenancies.index') }}" class="nav-link">Tenancies</a>
+            <a href="{{ route('meters.index') }}" class="nav-link">Meters</a>
             <a href="{{ route('meters.bulk-readings') }}" class="nav-link">Meter Readings</a>
             <a href="{{ route('bills.index') }}" class="nav-link">Bills</a>
             <a href="{{ route('payments.index') }}" class="nav-link">Payments</a>
@@ -47,6 +48,9 @@
             @endcan
             @can('manage settings')
                 <a href="{{ route('settings.index') }}" class="nav-link">Settings</a>
+            @endcan
+            @can('manage users')
+                <a href="{{ route('users.index') }}" class="nav-link">Users</a>
             @endcan
             <form method="POST" action="{{ route('logout') }}">
                 @csrf

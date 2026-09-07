@@ -4,7 +4,9 @@
             <h1 class="text-2xl font-bold tracking-tight">Team</h1>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Manage who has access to the ledger.</p>
         </div>
-        <button wire:click="openCreate" class="btn-primary">Add Member</button>
+        @can('create', \App\Models\User::class)
+            <button wire:click="openCreate" class="btn-primary">Add Member</button>
+        @endcan
     </div>
 
     @if (session()->has('message'))
@@ -48,8 +50,13 @@
                                 <span class="badge bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">Inactive</span>
                             @endif
                         </td>
-                        <td class="text-right">
+                        <td class="whitespace-nowrap text-right">
                             <button wire:click="openEdit('{{ $user->id }}')" class="btn-ghost px-2 py-1 text-xs">Edit</button>
+                            @if ($user->id !== auth()->id())
+                                @can('delete', $user)
+                                    <button wire:click="delete('{{ $user->id }}')" wire:confirm="Delete this user?" class="btn-ghost px-2 py-1 text-xs text-rose-600 dark:text-rose-400">Delete</button>
+                                @endcan
+                            @endif
                         </td>
                     </tr>
                 @empty

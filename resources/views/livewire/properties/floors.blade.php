@@ -24,7 +24,10 @@
                 </div>
                 <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-ink-700">
                     <span class="text-sm text-slate-500">{{ $floor->units_count }} units</span>
-                    <button wire:click="openEdit('{{ $floor->id }}')" class="btn-ghost px-3 py-1.5 text-xs">Edit</button>
+                    <div class="flex gap-1">
+                        <button wire:click="openEdit('{{ $floor->id }}')" class="btn-ghost px-3 py-1.5 text-xs">Edit</button>
+                        <button wire:click="delete('{{ $floor->id }}')" wire:confirm="Delete this floor?" class="btn-ghost px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400">Delete</button>
+                    </div>
                 </div>
             </div>
         @empty

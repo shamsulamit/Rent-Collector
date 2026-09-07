@@ -82,10 +82,27 @@ class UnitsIndex extends Component
         $this->reset('editingId');
     }
 
+    public function delete(string $id): void
+    {
+        $unit = Unit::findOrFail($id);
+        $this->authorize('delete', $unit);
+
+        if ($unit->activeTenancy) {
+            session()->flash('error', 'End the active tenancy before deleting this unit.');
+            return;
+        }
+
+        app(AuditService::class)->record('unit.deleted', 'Unit', $unit->id, null, $unit->toArray());
+        $unit->update(['is_deleted' => true, 'status' => 'inactive']);
+
+        session()->flash('message', 'Unit deleted.');
+    }
+
     public function render()
     {
         $units = Unit::query()
             ->where('property_id', $this->property->id)
+            ->where('is_deleted', false)
             ->when($this->search, fn ($q) => $q->where('name', 'like', "%{$this->search}%"))
             ->when($this->floorId, fn ($q) => $q->where('floor_id', $this->floorId))
             ->when($this->status, fn ($q) => $q->where('status', $this->status))
@@ -95,7 +112,7 @@ class UnitsIndex extends Component
 
         return view('livewire.properties.units', [
             'units' => $units,
-            'floors' => $this->property->floors()->orderBy('name')->get(),
+            'floors' => $this->property->floors()->where('is_deleted', false)->orderBy('name')->get(),
             'statuses' => UnitStatus::cases(),
         ])->layout('layouts.app');
     }

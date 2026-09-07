@@ -12,30 +12,38 @@
 
     <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         @forelse ($tenants as $tenant)
-            <a href="{{ route('tenants.show', $tenant) }}" class="card group p-5 transition-all hover:shadow-glow" wire:key="{{ $tenant->id }}">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-emerald-700 font-bold text-white">
-                        {{ strtoupper(substr($tenant->full_name, 0, 1)) }}
+            <div class="card group transition-all hover:shadow-glow" wire:key="{{ $tenant->id }}">
+                <a href="{{ route('tenants.show', $tenant) }}" class="block p-5">
+                    <div class="flex items-center gap-4">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-emerald-700 font-bold text-white">
+                            {{ strtoupper(substr($tenant->full_name, 0, 1)) }}
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="truncate font-bold group-hover:text-brand">{{ $tenant->full_name }}</h3>
+                            @if ($tenant->activeTenancy)
+                                <p class="truncate text-sm text-slate-500 dark:text-slate-400">
+                                    {{ $tenant->activeTenancy->unit?->name }} &middot; {{ $tenant->activeTenancy->property?->name }}
+                                </p>
+                            @else
+                                <p class="text-sm text-slate-400">No active tenancy</p>
+                            @endif
+                        </div>
                     </div>
-                    <div class="min-w-0">
-                        <h3 class="truncate font-bold group-hover:text-brand">{{ $tenant->full_name }}</h3>
-                        @if ($tenant->activeTenancy)
-                            <p class="truncate text-sm text-slate-500 dark:text-slate-400">
-                                {{ $tenant->activeTenancy->unit?->name }} &middot; {{ $tenant->activeTenancy->property?->name }}
-                            </p>
-                        @else
-                            <p class="text-sm text-slate-400">No active tenancy</p>
-                        @endif
+                    <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-sm dark:border-ink-700">
+                        <span class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h14a2 2 0 012 2v11a2 2 0 01-2 2h-9l-5 4V7a2 2 0 00-2-2h0z"/></svg>
+                            {{ $tenant->phone ?: '—' }}
+                        </span>
+                        <x-status-badge :label="$tenant->activeTenancy ? 'Active' : 'Inactive'" color="{{ $tenant->activeTenancy ? 'emerald' : 'slate' }}" />
                     </div>
+                </a>
+                <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-3 dark:border-ink-700">
+                    <button wire:click="openEdit('{{ $tenant->id }}')" class="btn-ghost px-3 py-1.5 text-xs">Edit</button>
+                    @can('delete', $tenant)
+                        <button wire:click="delete('{{ $tenant->id }}')" wire:confirm="Delete this tenant?" class="btn-ghost px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400">Delete</button>
+                    @endcan
                 </div>
-                <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-sm dark:border-ink-700">
-                    <span class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h14a2 2 0 012 2v11a2 2 0 01-2 2h-9l-5 4V7a2 2 0 00-2-2h0z"/></svg>
-                        {{ $tenant->phone ?: '—' }}
-                    </span>
-                    <x-status-badge :label="$tenant->activeTenancy ? 'Active' : 'Inactive'" color="{{ $tenant->activeTenancy ? 'emerald' : 'slate' }}" />
-                </div>
-            </a>
+            </div>
         @empty
             <div class="card col-span-full p-10 text-center">
                 <p class="font-medium">No tenants found</p>

@@ -54,6 +54,7 @@ class BulkReadings extends Component
     {
         $meters = Meter::query()
             ->where('status', 'active')
+            ->where('is_deleted', false)
             ->when($this->utility, fn ($q) => $q->where('utility', $this->utility))
             ->when($this->propertyId, fn ($q) => $q->where('property_id', $this->propertyId))
             ->when($this->floorId, fn ($q) => $q->where('floor_id', $this->floorId))

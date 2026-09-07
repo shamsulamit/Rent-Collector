@@ -105,6 +105,17 @@ class MaintenanceIndex extends Component
         session()->flash('message', 'Ticket status updated.');
     }
 
+    public function delete(string $id): void
+    {
+        $ticket = MaintenanceTicket::findOrFail($id);
+        $this->authorize('delete', $ticket);
+
+        app(AuditService::class)->record('maintenance.deleted', 'MaintenanceTicket', $ticket->id, null, $ticket->toArray());
+        $ticket->delete();
+
+        session()->flash('message', 'Ticket deleted.');
+    }
+
     public function render()
     {
         $tickets = MaintenanceTicket::query()

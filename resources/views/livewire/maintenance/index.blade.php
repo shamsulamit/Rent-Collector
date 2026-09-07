@@ -63,6 +63,9 @@
                         <button wire:click="setStatus('{{ $ticket->id }}', 'completed')" class="btn-ghost px-3 py-1.5 text-xs text-emerald-600 dark:text-emerald-400">Complete</button>
                     @endif
                     <button wire:click="openEdit('{{ $ticket->id }}')" class="btn-ghost px-3 py-1.5 text-xs">Edit</button>
+                    @can('delete', $ticket)
+                        <button wire:click="delete('{{ $ticket->id }}')" wire:confirm="Delete this ticket?" class="btn-ghost px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400">Delete</button>
+                    @endcan
                 </div>
             </div>
         @empty
