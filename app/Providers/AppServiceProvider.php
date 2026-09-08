@@ -12,9 +12,12 @@ use App\Models\Meter;
 use App\Models\MeterReading;
 use App\Models\Payment;
 use App\Models\Property;
+use App\Models\Tariff;
+use App\Models\Tenancy;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Models\User;
+use App\Models\Vendor;
 use App\Policies\BackupRecordPolicy;
 use App\Policies\BillPolicy;
 use App\Policies\DocumentPolicy;
@@ -25,9 +28,12 @@ use App\Policies\MeterPolicy;
 use App\Policies\MeterReadingPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PropertyPolicy;
+use App\Policies\TariffPolicy;
+use App\Policies\TenancyPolicy;
 use App\Policies\TenantPolicy;
 use App\Policies\UnitPolicy;
 use App\Policies\UserPolicy;
+use App\Policies\VendorPolicy;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -58,6 +64,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Document::class, DocumentPolicy::class);
         Gate::policy(BackupRecord::class, BackupRecordPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(Vendor::class, VendorPolicy::class);
+        Gate::policy(Tariff::class, TariffPolicy::class);
+        Gate::policy(Tenancy::class, TenancyPolicy::class);
 
         Gate::before(function (User $user, string $ability) {
             return $user->hasRole('owner') ? true : null;

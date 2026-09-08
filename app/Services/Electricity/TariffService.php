@@ -63,10 +63,30 @@ class TariffService
                 'status' => 'submitted',
             ]);
 
-            $this->audit->record('electricity_bill.calculated', $bill->id, null, $bill->toArray());
+            $this->audit->record('electricity_bill.calculated', 'ElectricityBill', $bill->id, $bill->toArray());
 
             return $bill;
         });
+    }
+
+    public function adjust(ElectricityBill $bill, float $discount, float $adjustment): ElectricityBill
+    {
+        if ($bill->isImmutable() && ! auth()->user()?->isOwner()) {
+            throw new \DomainException('This electricity bill is finalized and cannot be modified.');
+        }
+
+        $subtotal = (float) $bill->energy_charge + (float) $bill->fixed_charge + (float) $bill->service_charge
+            + (float) $bill->demand_charge + (float) $bill->other_charge + (float) $bill->vat;
+
+        $bill->update([
+            'discount' => $discount,
+            'adjustment' => $adjustment,
+            'total' => round($subtotal - $discount + $adjustment, 2),
+        ]);
+
+        $this->audit->record('electricity_bill.adjusted', 'ElectricityBill', $bill->id, $bill->toArray());
+
+        return $bill->fresh();
     }
 
     /**

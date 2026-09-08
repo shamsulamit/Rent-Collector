@@ -38,14 +38,22 @@
             <a href="{{ route('tenancies.index') }}" class="nav-link">Tenancies</a>
             <a href="{{ route('meters.index') }}" class="nav-link">Meters</a>
             <a href="{{ route('meters.bulk-readings') }}" class="nav-link">Meter Readings</a>
+            <a href="{{ route('electricity.index') }}" class="nav-link">Electricity</a>
+            <a href="{{ route('utilities.index') }}" class="nav-link">Gas &amp; Water</a>
+            <a href="{{ route('prepaid.index') }}" class="nav-link">Prepaid</a>
+            <a href="{{ route('tariffs.index') }}" class="nav-link">Tariffs</a>
             <a href="{{ route('bills.index') }}" class="nav-link">Bills</a>
             <a href="{{ route('payments.index') }}" class="nav-link">Payments</a>
             <a href="{{ route('expenses.index') }}" class="nav-link">Expenses</a>
+            <a href="{{ route('vendors.index') }}" class="nav-link">Vendors</a>
             <a href="{{ route('maintenance.index') }}" class="nav-link">Maintenance</a>
             <a href="{{ route('reports.index') }}" class="nav-link">Reports</a>
             @can('manage backups')
                 <a href="{{ route('backups.index') }}" class="nav-link">Backups</a>
             @endcan
+            @if (auth()->user()->isOwner() || auth()->user()->can('view audit logs'))
+                <a href="{{ route('audit.index') }}" class="nav-link">Audit Log</a>
+            @endif
             @can('manage settings')
                 <a href="{{ route('settings.index') }}" class="nav-link">Settings</a>
             @endcan

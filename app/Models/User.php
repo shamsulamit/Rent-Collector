@@ -40,6 +40,11 @@ class User extends Authenticatable
         'staff' => 'Staff',
     ];
 
+    public function isOwner(): bool
+    {
+        return $this->hasRole('owner');
+    }
+
     public function tenant(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Tenant::class, 'email', 'email');

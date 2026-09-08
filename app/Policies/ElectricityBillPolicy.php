@@ -24,11 +24,24 @@ class ElectricityBillPolicy
 
     public function update(User $user, ElectricityBill $bill): bool
     {
+        if ($user->isOwner()) {
+            return true;
+        }
+
         return $user->hasPermissionTo('manage readings') && ! $bill->isImmutable();
     }
 
     public function delete(User $user, ElectricityBill $bill): bool
     {
+        if ($user->isOwner()) {
+            return true;
+        }
+
         return $user->hasPermissionTo('manage readings') && ! $bill->isImmutable();
+    }
+
+    public function finalize(User $user, ElectricityBill $bill): bool
+    {
+        return $user->hasAnyPermission(['manage readings', 'finalize bills']) || $user->isOwner();
     }
 }

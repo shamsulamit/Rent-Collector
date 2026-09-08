@@ -16,6 +16,9 @@ class SettingsIndex extends Component
 
     public string $closeMonth = '';
 
+    public string $gasRate = '0';
+    public string $waterRate = '0';
+
     protected $rules = [
         'companyName' => 'required|string|max:255',
         'recurring.waste' => 'required|numeric|min:0',
@@ -24,6 +27,8 @@ class SettingsIndex extends Component
         'recurring.internet' => 'required|numeric|min:0',
         'recurring.parking' => 'required|numeric|min:0',
         'recurring.other' => 'required|numeric|min:0',
+        'gasRate' => 'required|numeric|min:0',
+        'waterRate' => 'required|numeric|min:0',
     ];
 
     public function mount(): void
@@ -37,6 +42,9 @@ class SettingsIndex extends Component
             'waste' => 0, 'security' => 0, 'cleaning' => 0, 'internet' => 0, 'parking' => 0, 'other' => 0,
         ], $recurring);
 
+        $this->gasRate = (string) Setting::get('gas_unit_rate', '0');
+        $this->waterRate = (string) Setting::get('water_unit_rate', '0');
+
         $this->closeMonth = now()->format('Y-m');
     }
 
@@ -48,6 +56,8 @@ class SettingsIndex extends Component
         Setting::set('company_name', $this->companyName);
         Setting::set('whatsapp_locale', $this->whatsappLocale);
         Setting::set('recurring_charges', json_encode($this->recurring));
+        Setting::set('gas_unit_rate', $this->gasRate);
+        Setting::set('water_unit_rate', $this->waterRate);
 
         app(AuditService::class)->record('settings.updated', 'Setting', null, $this->recurring);
         session()->flash('message', 'Settings saved.');

@@ -71,7 +71,7 @@ class ElectricityBill extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $bill) {
-            if ($bill->isImmutable()) {
+            if ($bill->isImmutable() && ! auth()->user()?->isOwner()) {
                 throw new \DomainException('This electricity bill is finalized and cannot be deleted.');
             }
         });

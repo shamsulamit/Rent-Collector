@@ -87,11 +87,14 @@ class PaymentService
     {
         $balance = $bill->balance();
 
+        $hasAllocations = $bill->allocations()->count() > 0;
+
         $status = match (true) {
             $balance < 0 => 'overpaid',
-            $balance == 0 => 'paid',
-            $bill->allocations()->count() > 0 => 'partial',
-            default => $bill->status,
+            $balance == 0 && $hasAllocations => 'paid',
+            $hasAllocations => 'partial',
+            $bill->finalized_at => 'finalized',
+            default => $bill->status === 'draft' ? 'draft' : 'due',
         };
 
         $bill->update(['status' => $status]);
@@ -106,6 +109,20 @@ class PaymentService
             ->where('tenant_id', $tenant->id)
             ->get()
             ->sum(fn (Payment $p) => $p->unallocated());
+    }
+
+    public function delete(Payment $payment): void
+    {
+        DB::transaction(function () use ($payment) {
+            $bills = $payment->allocations()->with('bill')->get()->pluck('bill')->filter();
+            $this->audit->record('payment.deleted', 'Payment', $payment->id, null, $payment->toArray());
+            $payment->allocations()->delete();
+            $payment->delete();
+
+            foreach ($bills as $bill) {
+                $this->refreshBillStatus($bill->fresh());
+            }
+        });
     }
 
     public function tenantOutstanding(Tenant $tenant): float

@@ -83,6 +83,14 @@ class PaymentsIndex extends Component
         session()->flash('message', 'Payment re-allocated.');
     }
 
+    public function delete(string $id): void
+    {
+        $payment = Payment::findOrFail($id);
+        $this->authorize('delete', $payment);
+        app(PaymentService::class)->delete($payment);
+        session()->flash('message', 'Payment deleted and allocations reversed.');
+    }
+
     public function render()
     {
         $payments = Payment::query()

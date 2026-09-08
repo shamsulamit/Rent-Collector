@@ -36,9 +36,16 @@
                         <td>৳{{ number_format($tenancy->deposit, 0) }}</td>
                         <td><x-status-badge :label="ucfirst($tenancy->status)" color="{{ $tenancy->status === 'active' ? 'emerald' : 'slate' }}" /></td>
                         <td>
-                            @if ($tenancy->status === 'active')
-                                <button wire:click="endTenancy('{{ $tenancy->id }}')" wire:confirm="End this tenancy?" class="btn-danger px-2.5 py-1 text-xs">End</button>
-                            @endif
+                            <div class="flex justify-end gap-1">
+                                <button wire:click="openEdit('{{ $tenancy->id }}')" class="btn-ghost px-2 py-1 text-xs">Edit</button>
+                                @if ($tenancy->status === 'active')
+                                    <button wire:click="openRentChange('{{ $tenancy->id }}')" class="btn-ghost px-2 py-1 text-xs text-brand-dark dark:text-brand-light">Rent</button>
+                                    <button wire:click="endTenancy('{{ $tenancy->id }}')" wire:confirm="End this tenancy?" class="btn-danger px-2.5 py-1 text-xs">End</button>
+                                @endif
+                                @can('delete', $tenancy)
+                                    <button wire:click="delete('{{ $tenancy->id }}')" wire:confirm="Delete this tenancy?" class="btn-ghost px-2 py-1 text-xs text-rose-600 dark:text-rose-400">Delete</button>
+                                @endcan
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -54,7 +61,7 @@
     <div class="modal-backdrop" wire:click.self="$set('showForm', false)">
         <div class="modal-panel max-w-xl">
             <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold">New Tenancy</h3>
+                <h3 class="text-lg font-bold">{{ $editingId ? 'Edit Tenancy' : 'New Tenancy' }}</h3>
                 <button wire:click="$set('showForm', false)" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-ink-700">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -139,7 +146,40 @@
 
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" wire:click="$set('showForm', false)" class="btn-secondary">Cancel</button>
-                    <button type="submit" class="btn-primary">Create Tenancy</button>
+                    <button type="submit" class="btn-primary">{{ $editingId ? 'Save Changes' : 'Create Tenancy' }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
+    @if ($showRent)
+    <div class="modal-backdrop" wire:click.self="$set('showRent', false)">
+        <div class="modal-panel">
+            <h3 class="text-lg font-bold">Record rent change</h3>
+            <form wire:submit="saveRentChange" class="mt-5 space-y-4">
+                <div>
+                    <label class="label">New monthly rent (৳)</label>
+                    <input type="number" step="0.01" wire:model="rentForm.new_rent" class="input" required>
+                </div>
+                <div>
+                    <label class="label">Effective date</label>
+                    <input type="date" wire:model="rentForm.effective_date" class="input" required>
+                </div>
+                <div>
+                    <label class="label">Proration</label>
+                    <select wire:model="rentForm.proration_method" class="input">
+                        <option value="calendar">Calendar days</option>
+                        <option value="none">No proration</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Reason</label>
+                    <input type="text" wire:model="rentForm.reason" class="input">
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" wire:click="$set('showRent', false)" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save rent change</button>
                 </div>
             </form>
         </div>

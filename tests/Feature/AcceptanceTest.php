@@ -518,7 +518,7 @@ class AcceptanceTest extends TestCase
         $this->assertNull(ElectricityBill::find($bill->id));
     }
 
-    public function test_13_finalized_bill_delete_via_ui_is_blocked(): void
+    public function test_13_owner_can_delete_finalized_electricity_bill(): void
     {
         $s = $this->makeSetup();
         $month = now()->format('Y-m');
@@ -537,7 +537,7 @@ class AcceptanceTest extends TestCase
         ]);
 
         $tariff = Tariff::create([
-            'name' => 'UI Blocked Tariff',
+            'name' => 'UI Owner Delete Tariff',
             'provider' => 'DESCO',
             'utility' => 'electricity',
             'meter_type' => 'postpaid',
@@ -562,6 +562,6 @@ class AcceptanceTest extends TestCase
             ->set('month', $month)
             ->call('deleteElectricityBill', $s['meter']->id);
 
-        $this->assertNotNull(ElectricityBill::find($bill->id));
+        $this->assertNull(ElectricityBill::find($bill->id));
     }
 }

@@ -29,11 +29,11 @@ class PaymentPolicy
 
     public function update(User $user, Payment $payment): bool
     {
-        return $user->hasRole('owner');
+        return $user->isOwner();
     }
 
     public function delete(User $user, Payment $payment): bool
     {
-        return $user->hasRole('owner');
+        return $user->isOwner();
     }
 }

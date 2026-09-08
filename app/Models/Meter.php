@@ -52,6 +52,21 @@ class Meter extends Model
         return $this->hasMany(ElectricityBill::class);
     }
 
+    public function gasBills(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(GasBill::class);
+    }
+
+    public function waterBills(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(WaterBill::class);
+    }
+
+    public function prepaidRecharges(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PrepaidRecharge::class);
+    }
+
     public function lastReading(?string $beforeMonth = null): ?MeterReading
     {
         $query = $this->readings()->where('status', '!=', 'draft');

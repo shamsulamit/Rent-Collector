@@ -74,6 +74,9 @@
                                     <button wire:click="openPayment('{{ $bill->id }}')" class="btn-ghost px-2 py-1 text-xs text-brand-dark dark:text-brand-light">Record Payment</button>
                                 @endif
                                 <button wire:click="sendWhatsApp('{{ $bill->id }}', 'monthly_bill')" class="btn-ghost px-2 py-1 text-xs text-emerald-600 dark:text-emerald-400">WhatsApp</button>
+                                @can('delete', $bill)
+                                    <button wire:click="delete('{{ $bill->id }}')" wire:confirm="Delete this bill?" class="btn-ghost px-2 py-1 text-xs text-rose-600 dark:text-rose-400">Delete</button>
+                                @endcan
                             </div>
                         </td>
                     </tr>

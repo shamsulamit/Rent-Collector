@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bill;
+use App\Models\ElectricityBill;
 use App\Models\Payment;
 use App\Services\Reports\ReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -22,6 +23,19 @@ class PdfController extends Controller
         ]);
 
         return $pdf->download('bill-'.$bill->bill_no.'-'.$bill->billing_month.'.pdf');
+    }
+
+    public function electricity(ElectricityBill $bill): Response
+    {
+        $bill->load(['tenant', 'unit', 'property', 'meter', 'tariff']);
+        $this->authorize('view', $bill);
+
+        $pdf = Pdf::loadView('pdf.electricity-bill', [
+            'bill' => $bill,
+            'company' => \App\Models\Setting::get('company_name', config('landlord.name')),
+        ]);
+
+        return $pdf->download('electricity-'.$bill->billing_month.'-'.($bill->meter?->meter_number ?? 'meter').'.pdf');
     }
 
     public function receipt(Payment $payment): Response

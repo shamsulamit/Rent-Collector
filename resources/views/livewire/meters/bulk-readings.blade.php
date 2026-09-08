@@ -67,7 +67,8 @@
                     <th class="text-right">Previous</th>
                     <th class="text-right">Current</th>
                     <th class="text-right">Usage</th>
-                    @if ($utility === 'electricity')<th class="text-right">Charge</th>@endif
+                    <th class="text-right">Charge</th>
+                    <th>If reading dropped</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -91,19 +92,29 @@
                                 <span class="text-slate-300 dark:text-slate-600">—</span>
                             @endif
                         </td>
-                        @if ($utility === 'electricity')
-                            <td class="text-right tabular-nums text-brand-dark dark:text-brand-light">
-                                @if (is_numeric($row['current']))
-                                    ৳{{ number_format($this->chargeOf($meterId), 2) }}
-                                @else
-                                    <span class="text-slate-300 dark:text-slate-600">—</span>
-                                @endif
-                            </td>
-                        @endif
+                        <td class="text-right tabular-nums text-brand-dark dark:text-brand-light">
+                            @if (is_numeric($row['current']))
+                                ৳{{ number_format($this->chargeOf($meterId), 2) }}
+                            @else
+                                <span class="text-slate-300 dark:text-slate-600">—</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if (is_numeric($row['current']) && (float) $row['current'] < (float) $row['previous'])
+                                <select wire:model.live="readings.{{ $meterId }}.anomaly" class="input py-1 text-xs">
+                                    <option value="normal">Choose…</option>
+                                    <option value="reset">Meter reset</option>
+                                    <option value="replacement">Replacement</option>
+                                    <option value="correction">Correction</option>
+                                </select>
+                            @else
+                                <span class="text-xs text-slate-400">—</span>
+                            @endif
+                        </td>
                         <td>
                             <div class="flex items-center justify-end gap-2">
                                 <x-status-badge :label="ucfirst($row['status'])" color="{{ $row['status'] === 'submitted' ? 'emerald' : ($row['status'] === 'finalized' ? 'indigo' : 'slate') }}" />
-                                @if ($utility === 'electricity' && isset($row['bill']) && $row['bill'] && ! $row['bill']->isImmutable())
+                                @if ($utility === 'electricity' && isset($row['bill']) && $row['bill'] && (! $row['bill']->isImmutable() || auth()->user()->isOwner()))
                                     <button wire:click="deleteElectricityBill('{{ $meterId }}')"
                                             wire:confirm="Delete the calculated electricity bill for this meter and month? This cannot be undone."
                                             class="rounded-lg border border-rose-300 px-2 py-0.5 text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950"
@@ -149,11 +160,17 @@
                     <span class="text-slate-500 dark:text-slate-400">Usage:
                         <strong>{{ is_numeric($row['current']) ? number_format(max(0, (float) $row['current'] - (float) $row['previous']), 1) : '—' }}</strong>
                     </span>
-                    @if ($utility === 'electricity')
-                        <span class="text-brand-dark dark:text-brand-light">Charge: <strong>৳{{ is_numeric($row['current']) ? number_format($this->chargeOf($meterId), 2) : '—' }}</strong></span>
-                    @endif
+                    <span class="text-brand-dark dark:text-brand-light">Charge: <strong>৳{{ is_numeric($row['current']) ? number_format($this->chargeOf($meterId), 2) : '—' }}</strong></span>
                 </div>
-                @if ($utility === 'electricity' && isset($row['bill']) && $row['bill'] && ! $row['bill']->isImmutable())
+                @if (is_numeric($row['current']) && (float) $row['current'] < (float) $row['previous'])
+                    <select wire:model.live="readings.{{ $meterId }}.anomaly" class="input mt-3 text-xs">
+                        <option value="normal">Reading dropped — choose action</option>
+                        <option value="reset">Meter reset</option>
+                        <option value="replacement">Replacement</option>
+                        <option value="correction">Correction</option>
+                    </select>
+                @endif
+                @if ($utility === 'electricity' && isset($row['bill']) && $row['bill'] && (! $row['bill']->isImmutable() || auth()->user()->isOwner()))
                     <button wire:click="deleteElectricityBill('{{ $meterId }}')"
                             wire:confirm="Delete the calculated electricity bill for this meter and month? This cannot be undone."
                             class="mt-3 w-full rounded-lg border border-rose-300 px-3 py-1.5 text-center text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950"

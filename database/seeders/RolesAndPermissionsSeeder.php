@@ -32,6 +32,8 @@ class RolesAndPermissionsSeeder extends Seeder
         'restore backups',
         'close accounting periods',
         'manage settings',
+        'manage tariffs',
+        'view audit logs',
     ];
 
     public function run(): void
@@ -49,7 +51,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'manage tenancies', 'manage leases', 'manage meters', 'manage readings',
                 'generate bills', 'finalize bills', 'record payments', 'allocate payments',
                 'manage expenses', 'manage vendors', 'manage maintenance', 'manage documents',
-                'view reports',
+                'view reports', 'manage tariffs',
             ],
             'accountant' => [
                 'generate bills', 'finalize bills', 'record payments', 'allocate payments',

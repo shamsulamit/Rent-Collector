@@ -8,6 +8,7 @@ use App\Models\Property;
 use App\Models\Tariff;
 use App\Services\AuditService;
 use App\Services\Electricity\TariffService;
+use App\Services\Utilities\UtilityBillingService;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -82,6 +83,7 @@ class BulkReadings extends Component
                 'current' => $existing?->current_reading ?? '',
                 'status' => $existing?->status ?? 'draft',
                 'note' => $existing?->notes ?? '',
+                'anomaly' => 'normal',
                 'charge' => $existing?->usage ?? null,
                 'bill' => $bill,
             ];
@@ -95,20 +97,27 @@ class BulkReadings extends Component
             return 0;
         }
 
-        return max(0, (float) $row['current'] - (float) $row['previous']);
+        $current = (float) $row['current'];
+        $previous = (float) $row['previous'];
+        $anomaly = $row['anomaly'] ?? 'normal';
+
+        if ($current < $previous && in_array($anomaly, ['reset', 'replacement'])) {
+            return max(0, $current);
+        }
+
+        return max(0, $current - $previous);
     }
 
     public function chargeOf(string $meterId): float
     {
-        if ($this->utility !== 'electricity') {
+        if (! in_array($this->utility, ['electricity', 'gas', 'water'])) {
             return 0;
         }
         $row = $this->readings[$meterId] ?? null;
         if (! $row) {
             return 0;
         }
-        $meter = $row['meter'];
-        $tariff = Tariff::query()->forDate(now()->toDateString(), 'electricity', 'postpaid')->first();
+        $tariff = Tariff::query()->forDate(now()->toDateString(), $this->utility, $row['meter']->meter_type ?: 'postpaid')->first();
 
         return $tariff ? $tariff->calculateEnergy($this->usageOf($meterId)) : 0;
     }
@@ -118,8 +127,9 @@ class BulkReadings extends Component
         foreach ($this->readings as $meterId => $row) {
             if (is_array($row) && isset($row['current']) && $row['current'] !== '' && is_numeric($row['current'])) {
                 $prev = (float) ($row['previous'] ?? 0);
-                if ((float) $row['current'] < $prev) {
-                    $this->addError('readings.'.$meterId.'.current', 'Current reading is below the previous reading ('.$prev.').');
+                $anomaly = $row['anomaly'] ?? 'normal';
+                if ((float) $row['current'] < $prev && ! in_array($anomaly, ['reset', 'replacement', 'correction'])) {
+                    $this->addError('readings.'.$meterId.'.current', 'Current reading is below the previous reading ('.$prev.'). Choose Reset, Replacement, or Correction.');
                 }
             }
         }
@@ -156,6 +166,16 @@ class BulkReadings extends Component
 
             $previous = (float) ($row['previous'] ?? 0);
             $current = (float) $row['current'];
+            $anomaly = $row['anomaly'] ?? 'normal';
+            if ($current < $previous && ! in_array($anomaly, ['reset', 'replacement', 'correction'])) {
+                continue;
+            }
+            $usage = $this->usageOf((string) $meterId);
+            $notes = trim(($row['note'] ?? '').($anomaly !== 'normal' ? ' ['.$anomaly.']' : ''));
+
+            if ($current < $previous && $anomaly === 'replacement') {
+                $meter->update(['status' => 'replaced', 'notes' => trim(($meter->notes ?? '').' Replaced on '.$this->month)]);
+            }
 
             MeterReading::updateOrCreate(
                 ['meter_id' => $meter->id, 'billing_month' => $this->month],
@@ -164,13 +184,13 @@ class BulkReadings extends Component
                     'unit_id' => $meter->unit_id,
                     'tenant_id' => $meter->unit->activeTenancy?->tenant_id,
                     'tenancy_id' => $meter->unit->activeTenancy?->id,
-                    'previous_reading' => $previous,
+                    'previous_reading' => $anomaly === 'reset' ? 0 : $previous,
                     'current_reading' => $current,
-                    'usage' => max(0, $current - $previous),
+                    'usage' => $usage,
                     'reading_date' => now()->toDateString(),
                     'status' => $status,
                     'entered_by' => auth()->id(),
-                    'notes' => $row['note'] ?? '',
+                    'notes' => $notes,
                 ]
             );
 
@@ -196,7 +216,7 @@ class BulkReadings extends Component
             return;
         }
 
-        if ($bill->isImmutable()) {
+        if ($bill->isImmutable() && ! auth()->user()?->isOwner()) {
             session()->flash('error', 'This electricity bill is finalized and cannot be deleted.');
             return;
         }
@@ -219,20 +239,24 @@ class BulkReadings extends Component
 
     public function calculateAll(): void
     {
-        if ($this->utility !== 'electricity') {
-            return;
-        }
-
         foreach ($this->readings as $meterId => $row) {
             if (! is_array($row) || $row['current'] === '') {
                 continue;
             }
             $meter = Meter::find($meterId);
-            $reading = $meter?->readings()->where('billing_month', $this->month)->first();
+            if (! $meter || $meter->meter_type === 'prepaid') {
+                continue;
+            }
+            $reading = $meter->readings()->where('billing_month', $this->month)->first();
             if (! $reading) {
                 continue;
             }
-            app(TariffService::class)->calculate($meter, $reading);
+
+            if ($this->utility === 'electricity') {
+                app(TariffService::class)->calculate($meter, $reading);
+            } elseif (in_array($this->utility, ['gas', 'water'])) {
+                app(UtilityBillingService::class)->calculate($meter, $reading);
+            }
         }
     }
 

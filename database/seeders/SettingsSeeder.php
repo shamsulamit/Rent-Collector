@@ -23,6 +23,8 @@ class SettingsSeeder extends Seeder
 
         Setting::updateOrCreate(['key' => 'whatsapp_locale'], ['value' => 'en']);
         Setting::updateOrCreate(['key' => 'company_name'], ['value' => 'Landlord Ledger']);
+        Setting::updateOrCreate(['key' => 'gas_unit_rate'], ['value' => '12']);
+        Setting::updateOrCreate(['key' => 'water_unit_rate'], ['value' => '8']);
 
         $utilities = [
             ['name' => 'Electricity', 'type' => 'metered', 'is_metered' => true],

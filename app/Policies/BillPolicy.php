@@ -43,6 +43,10 @@ class BillPolicy
 
     public function delete(User $user, Bill $bill): bool
     {
+        if ($user->isOwner()) {
+            return true;
+        }
+
         return $user->hasPermissionTo('generate bills') && ! $bill->isImmutable();
     }
 

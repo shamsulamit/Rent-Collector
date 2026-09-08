@@ -100,6 +100,14 @@ class BillsIndex extends Component
         $this->showPayment = false;
     }
 
+    public function delete(string $id): void
+    {
+        $bill = Bill::findOrFail($id);
+        $this->authorize('delete', $bill);
+        app(BillingService::class)->delete($bill);
+        session()->flash('message', 'Bill deleted.');
+    }
+
     public function sendWhatsApp(string $id, string $template = 'monthly_bill'): void
     {
         $bill = Bill::findOrFail($id);

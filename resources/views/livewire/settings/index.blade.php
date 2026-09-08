@@ -33,6 +33,16 @@
                         </div>
                     @endforeach
                 </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label">Gas unit rate (৳)</label>
+                        <input type="number" wire:model="gasRate" class="input" step="0.01" min="0">
+                    </div>
+                    <div>
+                        <label class="label">Water unit rate (৳)</label>
+                        <input type="number" wire:model="waterRate" class="input" step="0.01" min="0">
+                    </div>
+                </div>
                 <div class="flex justify-end">
                     <button type="submit" class="btn-primary">Save Settings</button>
                 </div>

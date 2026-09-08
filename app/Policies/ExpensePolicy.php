@@ -29,6 +29,6 @@ class ExpensePolicy
 
     public function delete(User $user, Expense $expense): bool
     {
-        return $user->hasRole('owner');
+        return $user->isOwner() || $user->hasPermissionTo('manage expenses');
     }
 }

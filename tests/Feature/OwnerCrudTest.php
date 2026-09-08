@@ -2,14 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Bills\BillsIndex;
 use App\Livewire\Meters\MetersIndex;
+use App\Livewire\Payments\PaymentsIndex;
 use App\Livewire\Properties\PropertiesIndex;
+use App\Livewire\Tariffs\TariffsIndex;
 use App\Livewire\Tenants\TenantsIndex;
 use App\Livewire\Users\UsersIndex;
+use App\Livewire\Vendors\VendorsIndex;
+use App\Models\Bill;
 use App\Models\Meter;
+use App\Models\Payment;
 use App\Models\Property;
+use App\Models\Tariff;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Vendor;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -129,5 +137,84 @@ class OwnerCrudTest extends TestCase
             ->call('delete', $tenant->id);
 
         $this->assertTrue($tenant->fresh()->is_deleted);
+    }
+
+    public function test_owner_can_delete_bill_and_payment(): void
+    {
+        $owner = $this->owner();
+        $property = Property::create(['name' => 'P2', 'status' => 'active']);
+        $unit = $property->units()->create(['name' => 'B-1', 'monthly_rent' => 12000, 'status' => 'occupied']);
+        $tenant = Tenant::create(['full_name' => 'Pay Tenant']);
+        $bill = Bill::create([
+            'property_id' => $property->id,
+            'unit_id' => $unit->id,
+            'tenant_id' => $tenant->id,
+            'bill_no' => '1',
+            'billing_month' => now()->format('Y-m'),
+            'rent' => 12000,
+            'total' => 12000,
+            'status' => 'finalized',
+            'finalized_at' => now()->toDateString(),
+        ]);
+        $payment = Payment::create([
+            'tenant_id' => $tenant->id,
+            'property_id' => $property->id,
+            'unit_id' => $unit->id,
+            'amount' => 5000,
+            'payment_date' => now()->toDateString(),
+            'method' => 'cash',
+        ]);
+
+        Livewire::actingAs($owner)
+            ->test(BillsIndex::class)
+            ->call('delete', $bill->id);
+
+        $this->assertNull(Bill::find($bill->id));
+
+        Livewire::actingAs($owner)
+            ->test(PaymentsIndex::class)
+            ->call('delete', $payment->id);
+
+        $this->assertNull(Payment::find($payment->id));
+    }
+
+    public function test_owner_can_manage_tariffs_and_vendors(): void
+    {
+        $owner = $this->owner();
+
+        Livewire::actingAs($owner)
+            ->test(TariffsIndex::class)
+            ->call('openCreate')
+            ->set('form.name', 'DESCO Test')
+            ->set('form.utility', 'electricity')
+            ->set('form.meter_type', 'postpaid')
+            ->set('slabs.0.rate', '5.5')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $tariff = Tariff::where('name', 'DESCO Test')->first();
+        $this->assertNotNull($tariff);
+
+        Livewire::actingAs($owner)
+            ->test(TariffsIndex::class)
+            ->call('delete', $tariff->id);
+
+        $this->assertNull(Tariff::find($tariff->id));
+
+        Livewire::actingAs($owner)
+            ->test(VendorsIndex::class)
+            ->call('openCreate')
+            ->set('form.name', 'Plumber Co')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $vendor = Vendor::where('name', 'Plumber Co')->first();
+        $this->assertNotNull($vendor);
+
+        Livewire::actingAs($owner)
+            ->test(VendorsIndex::class)
+            ->call('delete', $vendor->id);
+
+        $this->assertTrue($vendor->fresh()->is_deleted);
     }
 }

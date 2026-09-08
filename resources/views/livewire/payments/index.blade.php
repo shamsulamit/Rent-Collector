@@ -63,6 +63,9 @@
                                 @if ($payment->unallocated_amount > 0 && auth()->user()->can('allocate', $payment))
                                     <button wire:click="reallocate('{{ $payment->id }}')" class="btn-ghost px-2 py-1 text-xs text-brand-dark dark:text-brand-light">Re-allocate</button>
                                 @endif
+                                @can('delete', $payment)
+                                    <button wire:click="delete('{{ $payment->id }}')" wire:confirm="Delete this payment and reverse allocations?" class="btn-ghost px-2 py-1 text-xs text-rose-600 dark:text-rose-400">Delete</button>
+                                @endcan
                             </div>
                         </td>
                     </tr>

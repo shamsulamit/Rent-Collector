@@ -52,6 +52,21 @@ class Dashboard extends Component
         $this->utilityCollections = $report->utilityCollections($this->month, $this->propertyId);
         $this->attention = $this->attentionItems();
         $this->quickActions = $this->quickActionList();
+
+        $this->dispatch('dashboard-charts',
+            trend: $this->trend,
+            income: $this->incomeExpense,
+            utilities: $this->utilityCollections,
+            occupancy: [
+                'occupied' => $this->stats['occupied_units'] ?? 0,
+                'vacant' => max(0, ($this->stats['total_units'] ?? 0) - ($this->stats['occupied_units'] ?? 0)),
+            ],
+            mix: [
+                'rent' => $this->stats['expected_rent'] ?? 0,
+                'utility' => $this->stats['utility_billed'] ?? 0,
+                'expenses' => $this->stats['expenses'] ?? 0,
+            ],
+        );
     }
 
     protected function attentionItems(): array
@@ -153,6 +168,7 @@ class Dashboard extends Component
             ['label' => 'Record Payment', 'icon' => 'cash', 'route' => route('payments.index')],
             ['label' => 'Meter Readings', 'icon' => 'gauge', 'route' => route('meters.bulk-readings')],
             ['label' => 'Add Expense', 'icon' => 'receipt', 'route' => route('expenses.index')],
+            ['label' => 'Electricity Bills', 'icon' => 'doc', 'route' => route('electricity.index')],
             ['label' => 'Generate Bills', 'icon' => 'doc', 'route' => route('bills.index')],
             ['label' => 'Backup Now', 'icon' => 'database', 'route' => route('backups.index')],
         ];

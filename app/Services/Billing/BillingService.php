@@ -235,4 +235,34 @@ class BillingService
             return $bill;
         });
     }
+
+    public function delete(Bill $bill): void
+    {
+        DB::transaction(function () use ($bill) {
+            $this->audit->record('bill.deleted', 'Bill', $bill->id, null, $bill->toArray());
+            $bill->items()->delete();
+            $bill->allocations()->delete();
+            $bill->delete();
+        });
+    }
+
+    public function adjust(Bill $bill, float $discount, float $adjustment): Bill
+    {
+        if ($bill->isImmutable() && ! auth()->user()?->isOwner()) {
+            throw new \DomainException('This bill is finalized and cannot be modified.');
+        }
+
+        $subtotal = (float) $bill->rent + (float) $bill->electricity + (float) $bill->gas + (float) $bill->water
+            + (float) $bill->waste + (float) $bill->security + (float) $bill->cleaning
+            + (float) $bill->internet + (float) $bill->parking + (float) $bill->other;
+
+        $bill->update([
+            'discount' => $discount,
+            'adjustment' => $adjustment,
+            'total' => round($subtotal - $discount + $adjustment, 2),
+        ]);
+        $this->syncItems($bill);
+
+        return $bill->fresh();
+    }
 }
