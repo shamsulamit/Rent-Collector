@@ -20,7 +20,7 @@ return [
             'DESCO', 'DPDC', 'Palli Bidyut', 'NESCO', 'WZPDCL', 'BPDB', 'Custom',
         ],
         'default_slabs' => [
-            ['min' => 0, 'max' => 75, 'rate' => 0],
+            ['min' => 0, 'max' => 75, 'rate' => 5.00],
             ['min' => 76, 'max' => 200, 'rate' => 6.50],
             ['min' => 201, 'max' => 300, 'rate' => 7.80],
             ['min' => 301, 'max' => 400, 'rate' => 9.00],

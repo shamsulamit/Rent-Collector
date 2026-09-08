@@ -13,35 +13,72 @@ class TariffService
 {
     public function __construct(protected AuditService $audit) {}
 
+    public function resolveTariff(Meter $meter, $date, string $utility = 'electricity'): ?Tariff
+    {
+        $date = $date instanceof \DateTimeInterface ? $date->format('Y-m-d') : (string) ($date ?: now()->toDateString());
+        $meterType = $meter->meter_type ?: 'postpaid';
+
+        $query = Tariff::query()
+            ->forDate($date, $utility, $meterType)
+            ->where('is_active', true);
+
+        if ($meter->provider) {
+            $query->orderByRaw('CASE WHEN provider = ? THEN 0 ELSE 1 END', [$meter->provider]);
+        }
+
+        return $query->orderByDesc('effective_date')->first();
+    }
+
     /**
      * Calculate a postpaid electricity bill for a meter + reading + month.
+     * Finalized / paid bills are never recalculated (historical tariff lock).
      */
     public function calculate(Meter $meter, MeterReading $reading, ?Tariff $tariff = null): ElectricityBill
     {
-        $tariff = $tariff ?? Tariff::query()
-            ->forDate(($reading->reading_date ?? now()->toDateString()), 'electricity', 'postpaid')
+        if (($meter->meter_type ?: 'postpaid') === 'prepaid') {
+            throw new \DomainException('Prepaid meters use the recharge workflow, not postpaid monthly invoices.');
+        }
+
+        $meter->loadMissing(['unit.activeTenancy']);
+
+        $existing = ElectricityBill::query()
+            ->where('meter_id', $meter->id)
+            ->where('billing_month', $reading->billing_month)
             ->first();
+
+        if ($existing && $existing->isImmutable()) {
+            return $existing;
+        }
+
+        $date = $reading->reading_date
+            ?? (! empty($reading->billing_month) ? $reading->billing_month.'-01' : now()->toDateString());
+
+        $tariff = $tariff ?? $this->resolveTariff($meter, $date, 'electricity');
 
         $usage = max(0, (float) $reading->current_reading - (float) $reading->previous_reading);
         $energy = $tariff ? $tariff->calculateEnergy($usage) : 0;
-        $fixed = $tariff?->fixed_charge ?? 0;
-        $service = $tariff?->service_charge ?? 0;
-        $demand = $tariff?->demand_charge ?? 0;
-        $other = $tariff?->other_charge ?? 0;
-        $vatRate = $tariff?->vat_rate ?? 0;
+        $fixed = (float) ($tariff?->fixed_charge ?? 0);
+        $service = (float) ($tariff?->service_charge ?? 0);
+        $demand = (float) ($tariff?->demand_charge ?? 0);
+        $other = (float) ($tariff?->other_charge ?? 0);
+        $vatRate = (float) ($tariff?->vat_rate ?? 0);
 
         $subtotal = $energy + $fixed + $service + $demand + $other;
         $vat = round($subtotal * ($vatRate / 100), 2);
-        $total = round($subtotal + $vat, 2);
+        $discount = (float) ($existing?->discount ?? 0);
+        $adjustment = (float) ($existing?->adjustment ?? 0);
+        $total = round($subtotal + $vat - $discount + $adjustment, 2);
 
-        return DB::transaction(function () use ($meter, $reading, $tariff, $usage, $energy, $fixed, $service, $demand, $vat, $other, $total) {
+        return DB::transaction(function () use ($meter, $reading, $tariff, $usage, $energy, $fixed, $service, $demand, $vat, $other, $discount, $adjustment, $total) {
+            $tenancy = $meter->unit?->activeTenancy;
+
             $bill = ElectricityBill::updateOrCreate(
                 ['meter_id' => $meter->id, 'billing_month' => $reading->billing_month],
                 [
                     'property_id' => $meter->property_id,
                     'unit_id' => $meter->unit_id,
-                    'tenant_id' => $reading->tenant_id,
-                    'tenancy_id' => $reading->tenancy_id,
+                    'tenant_id' => $reading->tenant_id ?? $tenancy?->tenant_id,
+                    'tenancy_id' => $reading->tenancy_id ?? $tenancy?->id,
                     'tariff_id' => $tariff?->id,
                     'billing_month' => $reading->billing_month,
                     'previous_reading' => $reading->previous_reading,
@@ -53,6 +90,8 @@ class TariffService
                     'demand_charge' => $demand,
                     'vat' => $vat,
                     'other_charge' => $other,
+                    'discount' => $discount,
+                    'adjustment' => $adjustment,
                     'total' => $total,
                     'status' => 'calculated',
                 ]
@@ -67,6 +106,30 @@ class TariffService
 
             return $bill;
         });
+    }
+
+    public function preview(Meter $meter, float $usage, $date = null): array
+    {
+        $tariff = $this->resolveTariff($meter, $date ?? now()->toDateString(), $meter->utility ?: 'electricity');
+        $energy = $tariff ? $tariff->calculateEnergy($usage) : 0;
+        $fixed = (float) ($tariff?->fixed_charge ?? 0);
+        $service = (float) ($tariff?->service_charge ?? 0);
+        $demand = (float) ($tariff?->demand_charge ?? 0);
+        $other = (float) ($tariff?->other_charge ?? 0);
+        $vatRate = (float) ($tariff?->vat_rate ?? 0);
+        $subtotal = $energy + $fixed + $service + $demand + $other;
+        $vat = round($subtotal * ($vatRate / 100), 2);
+
+        return [
+            'energy' => $energy,
+            'fixed' => $fixed,
+            'service' => $service,
+            'demand' => $demand,
+            'other' => $other,
+            'vat' => $vat,
+            'total' => round($subtotal + $vat, 2),
+            'tariff' => $tariff,
+        ];
     }
 
     public function adjust(ElectricityBill $bill, float $discount, float $adjustment): ElectricityBill
@@ -105,7 +168,7 @@ class TariffService
                 'finalized_by' => auth()->id(),
             ]);
 
-            $this->audit->record('electricity_bill.finalized', $bill->id, null, $bill->toArray());
+            $this->audit->record('electricity_bill.finalized', 'ElectricityBill', $bill->id, $bill->toArray());
 
             return $bill;
         });

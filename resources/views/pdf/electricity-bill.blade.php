@@ -34,14 +34,9 @@
 
     <table>
         <tr><th>Description</th><th class="amt">Amount (৳)</th></tr>
-        <tr><td>Previous reading {{ number_format($bill->previous_reading, 1) }} → Current {{ number_format($bill->current_reading, 1) }} ({{ number_format($bill->usage, 1) }} units)</td><td class="amt">{{ number_format($bill->energy_charge, 2) }}</td></tr>
-        @if ($bill->fixed_charge > 0)<tr><td>Fixed charge</td><td class="amt">{{ number_format($bill->fixed_charge, 2) }}</td></tr>@endif
-        @if ($bill->service_charge > 0)<tr><td>Service charge</td><td class="amt">{{ number_format($bill->service_charge, 2) }}</td></tr>@endif
-        @if ($bill->demand_charge > 0)<tr><td>Demand charge</td><td class="amt">{{ number_format($bill->demand_charge, 2) }}</td></tr>@endif
-        @if ($bill->other_charge > 0)<tr><td>Other</td><td class="amt">{{ number_format($bill->other_charge, 2) }}</td></tr>@endif
-        @if ($bill->vat > 0)<tr><td>VAT</td><td class="amt">{{ number_format($bill->vat, 2) }}</td></tr>@endif
-        @if ($bill->discount > 0)<tr><td>Discount</td><td class="amt">-{{ number_format($bill->discount, 2) }}</td></tr>@endif
-        @if ($bill->adjustment != 0)<tr><td>Adjustment</td><td class="amt">{{ number_format($bill->adjustment, 2) }}</td></tr>@endif
+        @foreach ($bill->lineItems() as $item)
+            <tr><td>{{ $item['label'] }}</td><td class="amt">{{ number_format($item['amount'], 2) }}</td></tr>
+        @endforeach
         <tr class="total-row"><td>Total</td><td class="amt">৳{{ number_format($bill->total, 2) }}</td></tr>
     </table>
 </body>

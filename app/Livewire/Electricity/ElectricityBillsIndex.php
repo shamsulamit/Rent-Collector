@@ -24,7 +24,7 @@ class ElectricityBillsIndex extends Component
 
     public function mount(): void
     {
-        $this->month = now()->format('Y-m');
+        $this->month = request('month', '');
     }
 
     public function finalize(string $id): void
@@ -76,9 +76,12 @@ class ElectricityBillsIndex extends Component
             ->when($this->month, fn ($q) => $q->where('billing_month', $this->month))
             ->when($this->propertyId, fn ($q) => $q->where('property_id', $this->propertyId))
             ->when($this->status, fn ($q) => $q->where('status', $this->status))
-            ->when($this->search, fn ($q) => $q->whereHas('tenant', fn ($q) =>
-                $q->where('full_name', 'like', "%{$this->search}%"))
-                ->orWhereHas('meter', fn ($q) => $q->where('meter_number', 'like', "%{$this->search}%")))
+            ->when($this->search, function ($q) {
+                $q->where(function ($q) {
+                    $q->whereHas('tenant', fn ($q) => $q->where('full_name', 'like', "%{$this->search}%"))
+                        ->orWhereHas('meter', fn ($q) => $q->where('meter_number', 'like', "%{$this->search}%"));
+                });
+            })
             ->with(['tenant', 'unit', 'property', 'meter', 'tariff'])
             ->orderByDesc('billing_month')
             ->paginate(12);

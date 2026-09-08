@@ -5,7 +5,6 @@ namespace App\Livewire\Meters;
 use App\Models\Meter;
 use App\Models\MeterReading;
 use App\Models\Property;
-use App\Models\Tariff;
 use App\Services\AuditService;
 use App\Services\Electricity\TariffService;
 use App\Services\Utilities\UtilityBillingService;
@@ -117,9 +116,9 @@ class BulkReadings extends Component
         if (! $row) {
             return 0;
         }
-        $tariff = Tariff::query()->forDate(now()->toDateString(), $this->utility, $row['meter']->meter_type ?: 'postpaid')->first();
+        $preview = app(TariffService::class)->preview($row['meter'], $this->usageOf($meterId), $this->month.'-01');
 
-        return $tariff ? $tariff->calculateEnergy($this->usageOf($meterId)) : 0;
+        return $preview['total'];
     }
 
     public function updatedReadingsCurrent(): void
@@ -243,7 +242,7 @@ class BulkReadings extends Component
             if (! is_array($row) || $row['current'] === '') {
                 continue;
             }
-            $meter = Meter::find($meterId);
+            $meter = Meter::with('unit.activeTenancy')->find($meterId);
             if (! $meter || $meter->meter_type === 'prepaid') {
                 continue;
             }

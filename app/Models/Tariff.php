@@ -33,8 +33,10 @@ class Tariff extends Model
         return $this->hasMany(ElectricityBill::class);
     }
 
-    public function scopeForDate($query, string $date, string $utility = 'electricity', string $meterType = 'postpaid')
+    public function scopeForDate($query, $date, string $utility = 'electricity', string $meterType = 'postpaid')
     {
+        $date = $date instanceof \DateTimeInterface ? $date->format('Y-m-d') : (string) $date;
+
         return $query->where('utility', $utility)
             ->where('meter_type', $meterType)
             ->where(fn ($q) => $q->whereNull('effective_date')->orWhere('effective_date', '<=', $date))
@@ -43,29 +45,31 @@ class Tariff extends Model
     }
 
     /**
-     * Calculate the energy charge for a given usage using slab rates.
+     * Calculate the energy charge for a given usage using inclusive consumption slabs.
+     * Example: 160 units across 0–75 then 76–200 bills 75 + 85 units.
      */
     public function calculateEnergy(float $usage): float
     {
-        $total = 0.0;
-        $remaining = $usage;
-
-        if (empty($this->slabs)) {
+        if ($usage <= 0 || empty($this->slabs)) {
             return 0.0;
         }
 
+        $total = 0.0;
+        $billedThrough = 0.0;
         $slabs = collect($this->slabs)->sortBy('min')->values();
 
         foreach ($slabs as $slab) {
-            if ($remaining <= 0) {
+            if ($billedThrough >= $usage) {
                 break;
             }
-            $min = (float) ($slab['min'] ?? 0);
-            $max = isset($slab['max']) ? (float) $slab['max'] : PHP_FLOAT_MAX;
+
+            $max = ! isset($slab['max']) || $slab['max'] === '' || $slab['max'] === null
+                ? $usage
+                : (float) $slab['max'];
             $rate = (float) ($slab['rate'] ?? 0);
-            $band = min($remaining, $max - $min);
-            $total += $band * $rate;
-            $remaining -= $band;
+            $slice = max(0, min($usage, $max) - $billedThrough);
+            $total += $slice * $rate;
+            $billedThrough += $slice;
         }
 
         return round($total, 2);

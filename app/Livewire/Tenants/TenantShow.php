@@ -90,7 +90,7 @@ class TenantShow extends Component
             'unit_id' => $unit->id,
             'move_in_date' => $this->moveIn['move_in_date'],
             'monthly_rent' => $this->moveIn['monthly_rent'],
-            'deposit' => $this->moveIn['deposit'] ?? 0,
+            'deposit' => $this->moveIn['deposit'] === '' ? 0 : $this->moveIn['deposit'],
             'status' => 'active',
         ]);
 

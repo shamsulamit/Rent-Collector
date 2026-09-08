@@ -52,7 +52,7 @@ class DemoSeeder extends Seeder
         $unitA = $this->makeUnit($property, $floorA, 'A-101', 'vacant');
         $unitB = $this->makeUnit($property, $floorB, 'B-202', 'vacant');
 
-        $tariff = Tariff::firstOrCreate(['name' => 'DESCO Postpaid Residential'], [
+        $tariff = Tariff::updateOrCreate(['name' => 'DESCO Postpaid Residential'], [
             'provider' => 'DESCO',
             'utility' => 'electricity',
             'meter_type' => 'postpaid',
@@ -63,6 +63,7 @@ class DemoSeeder extends Seeder
             'demand_charge' => 0,
             'vat_rate' => 5,
             'other_charge' => 0,
+            'is_active' => true,
         ]);
 
         $tenants = [

@@ -9,6 +9,7 @@ use App\Livewire\Audit\AuditIndex;
 use App\Livewire\Backups\BackupsIndex;
 use App\Livewire\Bills\BillsIndex;
 use App\Livewire\Dashboard;
+use App\Livewire\Electricity\ElectricityBillShow;
 use App\Livewire\Electricity\ElectricityBillsIndex;
 use App\Livewire\Expenses\ExpensesIndex;
 use App\Livewire\Maintenance\MaintenanceIndex;
@@ -60,6 +61,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/meters', MetersIndex::class)->name('meters.index');
     Route::get('/meters/bulk-readings', BulkReadings::class)->name('meters.bulk-readings');
     Route::get('/electricity', ElectricityBillsIndex::class)->name('electricity.index');
+    Route::get('/electricity/{bill}', ElectricityBillShow::class)->name('electricity.show');
     Route::get('/utilities', UtilityBillsIndex::class)->name('utilities.index');
     Route::get('/prepaid', PrepaidIndex::class)->name('prepaid.index');
     Route::get('/tariffs', TariffsIndex::class)->name('tariffs.index');

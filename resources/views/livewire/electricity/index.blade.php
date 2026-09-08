@@ -2,13 +2,14 @@
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight">Electricity Bills</h1>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Postpaid monthly bills from meter readings and tariffs.</p>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Separate postpaid monthly bills: readings → tariff slabs → charges → tenant bill.</p>
         </div>
         <a href="{{ route('meters.bulk-readings') }}" class="btn-primary">Enter Readings</a>
     </div>
 
     <div class="mt-4 flex flex-wrap items-center gap-2">
-        <select wire:model.live="month" class="input max-w-[150px]">
+        <select wire:model.live="month" class="input max-w-[160px]">
+            <option value="">All months</option>
             @foreach ($months as $m)
                 <option value="{{ $m }}">{{ \Carbon\Carbon::createFromFormat('Y-m', $m)->format('M Y') }}</option>
             @endforeach
@@ -32,12 +33,14 @@
         <table class="table-base">
             <thead>
                 <tr>
+                    <th>Month</th>
                     <th>Meter</th>
-                    <th>Tenant</th>
-                    <th>Unit</th>
+                    <th>Tenant / Unit</th>
+                    <th class="text-right">Previous</th>
+                    <th class="text-right">Current</th>
                     <th class="text-right">Usage</th>
+                    <th class="text-right">Energy</th>
                     <th class="text-right">Total</th>
-                    <th>Tariff</th>
                     <th>Status</th>
                     <th class="text-right">Actions</th>
                 </tr>
@@ -45,15 +48,21 @@
             <tbody class="divide-y divide-slate-100 dark:divide-ink-700">
                 @forelse ($bills as $bill)
                     <tr>
+                        <td class="whitespace-nowrap">{{ \Carbon\Carbon::createFromFormat('Y-m', $bill->billing_month)->format('M Y') }}</td>
                         <td class="font-mono text-xs">{{ $bill->meter?->meter_number }}</td>
-                        <td>{{ $bill->tenant?->full_name ?? '—' }}</td>
-                        <td>{{ $bill->unit?->name }}</td>
-                        <td class="text-right tabular-nums">{{ number_format($bill->usage, 1) }}</td>
+                        <td>
+                            <div class="font-medium">{{ $bill->tenant?->full_name ?? '—' }}</div>
+                            <div class="text-xs text-slate-400">{{ $bill->unit?->name }} · {{ $bill->property?->name }}</div>
+                        </td>
+                        <td class="text-right tabular-nums">{{ number_format($bill->previous_reading, 1) }}</td>
+                        <td class="text-right tabular-nums">{{ number_format($bill->current_reading, 1) }}</td>
+                        <td class="text-right font-semibold tabular-nums">{{ number_format($bill->usage, 1) }}</td>
+                        <td class="text-right tabular-nums">৳{{ number_format($bill->energy_charge, 2) }}</td>
                         <td class="text-right font-semibold tabular-nums">৳{{ number_format($bill->total, 2) }}</td>
-                        <td class="text-xs text-slate-500">{{ $bill->tariff?->name ?? '—' }}</td>
                         <td><x-status-badge :label="ucfirst($bill->status)" color="{{ $bill->status }}" /></td>
                         <td>
                             <div class="flex justify-end gap-1">
+                                <a href="{{ route('electricity.show', $bill) }}" class="btn-ghost px-2 py-1 text-xs">View</a>
                                 <a href="{{ route('electricity.pdf', $bill) }}" target="_blank" class="btn-ghost px-2 py-1 text-xs">PDF</a>
                                 @if (! $bill->isImmutable() || auth()->user()->isOwner())
                                     <button wire:click="openAdjust('{{ $bill->id }}')" class="btn-ghost px-2 py-1 text-xs">Adjust</button>
@@ -68,7 +77,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="py-10 text-center text-slate-400">No electricity bills. Submit meter readings to calculate them.</td></tr>
+                    <tr><td colspan="10" class="py-10 text-center text-slate-400">No electricity bills. Submit postpaid meter readings to calculate them.</td></tr>
                 @endforelse
             </tbody>
         </table>

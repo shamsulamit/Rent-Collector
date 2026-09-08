@@ -63,6 +63,29 @@ class ElectricityBill extends Model
         return $this->belongsTo(Tariff::class);
     }
 
+    public function lineItems(): array
+    {
+        $items = [
+            ['label' => 'Energy charge ('.$this->usage.' units)', 'amount' => (float) $this->energy_charge],
+            ['label' => 'Fixed charge', 'amount' => (float) $this->fixed_charge],
+            ['label' => 'Service charge', 'amount' => (float) $this->service_charge],
+            ['label' => 'Demand charge', 'amount' => (float) $this->demand_charge],
+            ['label' => 'Other charge', 'amount' => (float) $this->other_charge],
+            ['label' => 'VAT', 'amount' => (float) $this->vat],
+        ];
+
+        $items = array_values(array_filter($items, fn ($item) => $item['amount'] != 0 || str_starts_with($item['label'], 'Energy')));
+
+        if ((float) $this->discount > 0) {
+            $items[] = ['label' => 'Discount', 'amount' => -1 * (float) $this->discount];
+        }
+        if ((float) $this->adjustment != 0) {
+            $items[] = ['label' => 'Adjustment', 'amount' => (float) $this->adjustment];
+        }
+
+        return $items;
+    }
+
     public function isImmutable(): bool
     {
         return in_array($this->status, ['finalized', 'paid', 'partial', 'due', 'overpaid']);

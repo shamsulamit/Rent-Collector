@@ -110,7 +110,8 @@
                 </div>
 
                 <div class="rounded-xl bg-slate-50 p-4 dark:bg-ink-900">
-                    <p class="mb-3 text-sm font-semibold">Optional Lease</p>
+                    <p class="mb-1 text-sm font-semibold">Optional lease</p>
+                    <p class="mb-3 text-xs text-slate-400">Leave blank unless you want a lease record. Empty dates are not saved.</p>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label class="label">Start date</label>

@@ -65,7 +65,14 @@ class TenancyIndex extends Component
     {
         $this->reset('form', 'lease', 'editingId');
         $this->form['move_in_date'] = now()->toDateString();
-        $this->lease['start_date'] = now()->toDateString();
+        $this->form['deposit'] = '0';
+        $this->lease = [
+            'start_date' => '',
+            'end_date' => '',
+            'security_deposit' => '',
+            'terms' => '',
+            'status' => 'active',
+        ];
         $this->showForm = true;
     }
 
@@ -99,15 +106,17 @@ class TenancyIndex extends Component
         $this->validate();
 
         $unit = Unit::findOrFail($this->form['unit_id']);
+        $payload = $this->tenancyPayload();
+        $leasePayload = $this->leasePayload();
 
         if ($this->editingId) {
             $tenancy = Tenancy::findOrFail($this->editingId);
             $this->authorize('update', $tenancy);
-            $tenancy->update($this->form);
-            if ($this->lease['start_date']) {
+            $tenancy->update($payload);
+            if ($this->shouldSaveLease()) {
                 $tenancy->leases()->updateOrCreate(
                     ['tenancy_id' => $tenancy->id],
-                    $this->lease + [
+                    $leasePayload + [
                         'tenant_id' => $tenancy->tenant_id,
                         'unit_id' => $tenancy->unit_id,
                         'monthly_rent' => $tenancy->monthly_rent,
@@ -117,11 +126,11 @@ class TenancyIndex extends Component
             app(AuditService::class)->record('tenancy.updated', 'Tenancy', $tenancy->id, $tenancy->toArray());
             session()->flash('message', 'Tenancy updated.');
         } else {
-            $tenancy = Tenancy::create($this->form + ['status' => 'active']);
+            $tenancy = Tenancy::create($payload + ['status' => 'active']);
             $unit->markOccupied(Tenant::find($this->form['tenant_id'])?->full_name);
 
-            if ($this->lease['start_date']) {
-                $tenancy->leases()->create($this->lease + [
+            if ($this->shouldSaveLease()) {
+                $tenancy->leases()->create($leasePayload + [
                     'tenant_id' => $tenancy->tenant_id,
                     'unit_id' => $tenancy->unit_id,
                     'monthly_rent' => $tenancy->monthly_rent,
@@ -190,6 +199,35 @@ class TenancyIndex extends Component
         }
         app(AuditService::class)->record('tenancy.deleted', 'Tenancy', $tenancy->id, null, $tenancy->toArray());
         session()->flash('message', 'Tenancy deleted.');
+    }
+
+    protected function tenancyPayload(): array
+    {
+        return [
+            'tenant_id' => $this->form['tenant_id'],
+            'property_id' => $this->form['property_id'],
+            'unit_id' => $this->form['unit_id'],
+            'move_in_date' => $this->form['move_in_date'] ?: null,
+            'monthly_rent' => $this->form['monthly_rent'] === '' ? 0 : $this->form['monthly_rent'],
+            'deposit' => $this->form['deposit'] === '' ? 0 : $this->form['deposit'],
+            'notes' => $this->form['notes'] ?: null,
+        ];
+    }
+
+    protected function leasePayload(): array
+    {
+        return [
+            'start_date' => $this->lease['start_date'] ?: null,
+            'end_date' => $this->lease['end_date'] ?: null,
+            'security_deposit' => $this->lease['security_deposit'] === '' ? 0 : $this->lease['security_deposit'],
+            'terms' => $this->lease['terms'] ?: null,
+            'status' => $this->lease['status'] ?: 'active',
+        ];
+    }
+
+    protected function shouldSaveLease(): bool
+    {
+        return filled($this->lease['start_date']) || filled($this->lease['end_date']) || filled($this->lease['terms']);
     }
 
     public function endTenancy(string $id): void
