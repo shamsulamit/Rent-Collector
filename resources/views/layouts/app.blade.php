@@ -84,6 +84,33 @@
 
     <x-theme-toggle />
 
+    <div x-data="{
+            show: false,
+            text: '',
+            type: 'success',
+            timer: null,
+            showMsg(event) {
+                const detail = event.detail || {};
+                const payload = Array.isArray(detail) ? (detail[0] || {}) : detail;
+                this.text = payload.message || detail.message || '';
+                this.type = payload.type || detail.type || 'success';
+                if (! this.text) return;
+                this.show = true;
+                clearTimeout(this.timer);
+                this.timer = setTimeout(() => this.show = false, 4500);
+            }
+         }"
+         x-on:notify.window="showMsg($event)"
+         x-cloak
+         x-show="show"
+         x-transition
+         class="fixed bottom-6 right-4 z-[80] max-w-sm rounded-xl border px-4 py-3 text-sm shadow-lg"
+         :class="type === 'error'
+            ? 'border-rose-500/30 bg-white text-rose-600 dark:bg-ink-800 dark:text-rose-400'
+            : 'border-brand/30 bg-white text-brand-dark dark:bg-ink-800 dark:text-brand-light'">
+        <span x-text="text"></span>
+    </div>
+
     @livewireScripts
     @stack('scripts')
 </body>

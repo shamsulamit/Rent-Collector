@@ -1,10 +1,11 @@
 <div>
+    <x-flash />
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight">Electricity Bills</h1>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Separate postpaid monthly bills: readings → tariff slabs → charges → tenant bill.</p>
         </div>
-        <a href="{{ route('meters.bulk-readings') }}" class="btn-primary">Enter Readings</a>
+        <button wire:click="openCreate" class="btn-primary">Add electricity bill</button>
     </div>
 
     <div class="mt-4 flex flex-wrap items-center gap-2">
@@ -99,6 +100,37 @@
                 </div>
                 <div class="flex justify-end gap-2">
                     <button type="button" wire:click="$set('showAdjust', false)" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
+    @if ($showCreate)
+    <div class="modal-backdrop" wire:click.self="$set('showCreate', false)">
+        <div class="modal-panel">
+            <h3 class="text-lg font-bold">Add electricity bill</h3>
+            <form wire:submit="saveCreate" class="mt-5 space-y-4">
+                <div>
+                    <label class="label">Meter</label>
+                    <select wire:model="create.meter_id" class="input" required>
+                        <option value="">Select meter</option>
+                        @foreach ($postpaidMeters as $meter)
+                            <option value="{{ $meter->id }}">{{ $meter->meter_number }} · {{ $meter->unit?->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Month</label>
+                    <input type="month" wire:model="create.billing_month" class="input" required>
+                </div>
+                <div>
+                    <label class="label">Bill amount (৳)</label>
+                    <input type="number" step="0.01" min="0" wire:model="create.total" class="input" required>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" wire:click="$set('showCreate', false)" class="btn-secondary">Cancel</button>
                     <button type="submit" class="btn-primary">Save</button>
                 </div>
             </form>

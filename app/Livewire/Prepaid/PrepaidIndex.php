@@ -79,11 +79,11 @@ class PrepaidIndex extends Component
             $row = PrepaidRecharge::findOrFail($this->editingId);
             $row->update($payload);
             app(AuditService::class)->record('prepaid.updated', 'PrepaidRecharge', $row->id, $payload);
-            session()->flash('message', 'Prepaid recharge updated.');
+            notify('Prepaid recharge updated.');
         } else {
             $row = PrepaidRecharge::create($payload);
             app(AuditService::class)->record('prepaid.created', 'PrepaidRecharge', $row->id, $payload);
-            session()->flash('message', 'Prepaid recharge recorded. No postpaid invoice was generated.');
+            notify('Prepaid recharge added.');
         }
 
         $this->showForm = false;
@@ -96,7 +96,7 @@ class PrepaidIndex extends Component
         $this->authorize('manage readings');
         app(AuditService::class)->record('prepaid.deleted', 'PrepaidRecharge', $row->id, null, $row->toArray());
         $row->delete();
-        session()->flash('message', 'Prepaid recharge deleted.');
+        notify('Prepaid recharge deleted.');
     }
 
     public function render()

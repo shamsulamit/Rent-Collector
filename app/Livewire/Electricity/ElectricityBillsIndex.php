@@ -3,6 +3,7 @@
 namespace App\Livewire\Electricity;
 
 use App\Models\ElectricityBill;
+use App\Models\Meter;
 use App\Models\Property;
 use App\Services\AuditService;
 use App\Services\Electricity\TariffService;
@@ -22,6 +23,13 @@ class ElectricityBillsIndex extends Component
     public ?string $adjustingId = null;
     public array $adjust = ['discount' => '0', 'adjustment' => '0'];
 
+    public bool $showCreate = false;
+    public array $create = [
+        'meter_id' => '',
+        'billing_month' => '',
+        'total' => '',
+    ];
+
     public function mount(): void
     {
         $this->month = request('month', '');
@@ -32,7 +40,7 @@ class ElectricityBillsIndex extends Component
         $bill = ElectricityBill::findOrFail($id);
         $this->authorize('finalize', $bill);
         app(TariffService::class)->finalize($bill);
-        session()->flash('message', 'Electricity bill finalized.');
+        notify('Electricity bill finalized.');
     }
 
     public function openAdjust(string $id): void
@@ -57,7 +65,45 @@ class ElectricityBillsIndex extends Component
             (float) $this->adjust['adjustment']
         );
         $this->showAdjust = false;
-        session()->flash('message', 'Electricity bill updated.');
+        notify('Electricity bill saved.');
+    }
+
+    public function openCreate(): void
+    {
+        $this->create = [
+            'meter_id' => '',
+            'billing_month' => now()->format('Y-m'),
+            'total' => '',
+        ];
+        $this->showCreate = true;
+    }
+
+    public function saveCreate(): void
+    {
+        $this->create['billing_month'] = substr((string) $this->create['billing_month'], 0, 7);
+        $this->validate([
+            'create.meter_id' => 'required|exists:meters,id',
+            'create.billing_month' => 'required|date_format:Y-m',
+            'create.total' => 'required|numeric|min:0',
+        ]);
+
+        $meter = Meter::findOrFail($this->create['meter_id']);
+        $this->authorize('create', ElectricityBill::class);
+
+        try {
+            app(TariffService::class)->recordTotal(
+                $meter,
+                $this->create['billing_month'],
+                (float) $this->create['total']
+            );
+        } catch (\DomainException $e) {
+            notify($e->getMessage(), 'error');
+
+            return;
+        }
+
+        $this->showCreate = false;
+        notify('Electricity bill added.');
     }
 
     public function delete(string $id): void
@@ -67,7 +113,7 @@ class ElectricityBillsIndex extends Component
 
         app(AuditService::class)->record('electricity_bill.deleted', 'ElectricityBill', $bill->id, null, $bill->toArray());
         $bill->delete();
-        session()->flash('message', 'Electricity bill deleted.');
+        notify('Electricity bill deleted.');
     }
 
     public function render()
@@ -90,6 +136,13 @@ class ElectricityBillsIndex extends Component
             'bills' => $bills,
             'properties' => Property::active()->orderBy('name')->get(),
             'months' => collect(range(0, 11))->map(fn ($i) => now()->subMonths($i)->format('Y-m')),
+            'postpaidMeters' => Meter::query()
+                ->where('is_deleted', false)
+                ->where('utility', 'electricity')
+                ->where(fn ($q) => $q->whereNull('meter_type')->orWhere('meter_type', 'postpaid'))
+                ->with('unit')
+                ->orderBy('meter_number')
+                ->get(),
         ])->layout('layouts.app');
     }
 }

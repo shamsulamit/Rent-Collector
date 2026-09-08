@@ -95,12 +95,12 @@ class MetersIndex extends Component
             $this->authorize('update', $meter);
             $meter->update($payload);
             app(AuditService::class)->record('meter.updated', 'Meter', $meter->id, $payload);
-            session()->flash('message', 'Meter updated.');
+            notify('Meter saved.');
         } else {
             $this->authorize('create', Meter::class);
             $meter = Meter::create($payload);
             app(AuditService::class)->record('meter.created', 'Meter', $meter->id, $meter->toArray());
-            session()->flash('message', 'Meter created.');
+            notify('Meter added.');
         }
 
         $this->showForm = false;
@@ -113,14 +113,14 @@ class MetersIndex extends Component
         $this->authorize('delete', $meter);
 
         if ($meter->electricityBills()->whereIn('status', ['finalized', 'paid', 'partial', 'due', 'overpaid'])->exists()) {
-            session()->flash('error', 'This meter has finalized electricity bills and cannot be deleted.');
+            notify('This meter has finalized electricity bills and cannot be deleted.', 'error');
             return;
         }
 
         app(AuditService::class)->record('meter.deleted', 'Meter', $meter->id, null, $meter->toArray());
         $meter->update(['is_deleted' => true, 'status' => 'inactive']);
 
-        session()->flash('message', 'Meter deleted.');
+        notify('Meter deleted.');
     }
 
     public function render()

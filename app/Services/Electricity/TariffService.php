@@ -132,6 +132,51 @@ class TariffService
         ];
     }
 
+    public function recordTotal(Meter $meter, string $billingMonth, float $total): ElectricityBill
+    {
+        $meter->loadMissing(['unit.activeTenancy']);
+        $tenancy = $meter->unit?->activeTenancy;
+        $total = round($total, 2);
+
+        $existing = ElectricityBill::query()
+            ->where('meter_id', $meter->id)
+            ->where('billing_month', $billingMonth)
+            ->first();
+
+        if ($existing && $existing->isImmutable() && ! auth()->user()?->isOwner()) {
+            throw new \DomainException('This electricity bill is finalized and cannot be modified.');
+        }
+
+        return DB::transaction(function () use ($meter, $tenancy, $billingMonth, $total, $existing) {
+            $bill = ElectricityBill::updateOrCreate(
+                ['meter_id' => $meter->id, 'billing_month' => $billingMonth],
+                [
+                    'property_id' => $meter->property_id,
+                    'unit_id' => $meter->unit_id,
+                    'tenant_id' => $tenancy?->tenant_id,
+                    'tenancy_id' => $tenancy?->id,
+                    'previous_reading' => $existing?->previous_reading ?? 0,
+                    'current_reading' => $existing?->current_reading ?? 0,
+                    'usage' => $existing?->usage ?? 0,
+                    'energy_charge' => $total,
+                    'fixed_charge' => 0,
+                    'service_charge' => 0,
+                    'demand_charge' => 0,
+                    'vat' => 0,
+                    'other_charge' => 0,
+                    'discount' => 0,
+                    'adjustment' => 0,
+                    'total' => $total,
+                    'status' => 'calculated',
+                ]
+            );
+
+            $this->audit->record('electricity_bill.recorded', 'ElectricityBill', $bill->id, ['total' => $total]);
+
+            return $bill;
+        });
+    }
+
     public function adjust(ElectricityBill $bill, float $discount, float $adjustment): ElectricityBill
     {
         if ($bill->isImmutable() && ! auth()->user()?->isOwner()) {
