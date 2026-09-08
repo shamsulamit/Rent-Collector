@@ -1,11 +1,12 @@
 <div>
+    <x-flash />
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight">Meters</h1>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Electricity, gas and water meters.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ route('meters.bulk-readings') }}" class="btn-secondary">Bulk Meter Entry</a>
+            <a href="{{ route('meters.bulk-readings') }}" class="btn-secondary">Gas &amp; water readings</a>
             @can('create', \App\Models\Meter::class)
                 <button wire:click="openCreate" class="btn-primary">Add Meter</button>
             @endcan
@@ -114,11 +115,17 @@
                     </div>
                     <div>
                         <label class="label">Meter type</label>
-                        <select wire:model="form.meter_type" class="input">
-                            <option value="postpaid">Postpaid</option>
-                            <option value="prepaid">Prepaid</option>
+                        <select wire:model.live="form.meter_type" class="input">
+                            <option value="postpaid">Postpaid (monthly bill)</option>
+                            <option value="prepaid">Prepaid (recharge units)</option>
                         </select>
                     </div>
+                    @if ($form['meter_type'] === 'prepaid')
+                    <div>
+                        <label class="label">Default unit price (৳)</label>
+                        <input type="number" wire:model="form.unit_price" class="input" step="0.0001" min="0">
+                    </div>
+                    @endif
                     <div>
                         <label class="label">Measurement unit</label>
                         <input type="text" wire:model="form.measurement_unit" class="input" placeholder="kWh, m³...">

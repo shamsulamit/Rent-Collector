@@ -52,6 +52,12 @@ class Payment extends Model
 
     public function unallocated(): float
     {
-        return round((float) $this->amount - (float) $this->allocations()->sum('amount'), 2);
+        $allocated = array_key_exists('allocated_sum', $this->attributes)
+            ? (float) ($this->attributes['allocated_sum'] ?? 0)
+            : ($this->relationLoaded('allocations')
+                ? (float) $this->allocations->sum('amount')
+                : (float) $this->allocations()->sum('amount'));
+
+        return round((float) $this->amount - $allocated, 2);
     }
 }

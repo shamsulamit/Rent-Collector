@@ -70,7 +70,7 @@ class PaymentsIndex extends Component
             'recorded_by' => auth()->id(),
         ], $this->strategy);
 
-        session()->flash('message', 'Payment recorded and allocated using "'.$this->strategy.'".');
+        notify('Payment recorded and allocated using "'.$this->strategy.'".');
         $this->showForm = false;
     }
 
@@ -80,7 +80,7 @@ class PaymentsIndex extends Component
         $this->authorize('allocate', $payment);
         $payment->allocations()->delete();
         app(PaymentService::class)->allocate($payment, $this->strategy);
-        session()->flash('message', 'Payment re-allocated.');
+        notify('Payment re-allocated.');
     }
 
     public function delete(string $id): void
@@ -88,7 +88,7 @@ class PaymentsIndex extends Component
         $payment = Payment::findOrFail($id);
         $this->authorize('delete', $payment);
         app(PaymentService::class)->delete($payment);
-        session()->flash('message', 'Payment deleted and allocations reversed.');
+        notify('Payment deleted and allocations reversed.');
     }
 
     public function render()
@@ -102,7 +102,8 @@ class PaymentsIndex extends Component
             ->when($this->method, fn ($q) => $q->where('method', $this->method))
             ->when($this->from, fn ($q) => $q->whereDate('payment_date', '>=', $this->from))
             ->when($this->to, fn ($q) => $q->whereDate('payment_date', '<=', $this->to))
-            ->with(['tenant', 'unit', 'property', 'allocations.bill', 'recorder'])
+            ->with(['tenant', 'unit', 'property', 'recorder'])
+            ->withSum('allocations as allocated_sum', 'amount')
             ->orderByDesc('payment_date')
             ->paginate(12);
 

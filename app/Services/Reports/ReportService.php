@@ -4,8 +4,7 @@ namespace App\Services\Reports;
 
 use App\Models\Bill;
 use App\Models\Expense;
-use App\Models\Payment;
-use App\Models\Property;
+use App\Models\Unit;
 use Carbon\Carbon;
 
 class ReportService
@@ -23,7 +22,7 @@ class ReportService
             ->where('billing_month', $month)
             ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId));
 
-        $bills = $billQuery->get();
+        $bills = $billQuery->withSum('allocations as allocated_sum', 'amount')->get();
         $expectedRent = (float) $bills->sum('rent');
         $collected = (float) $bills->sum(fn ($b) => $b->totalPaid());
         $due = (float) $bills->sum(fn ($b) => max(0, $b->balance()));
@@ -35,12 +34,14 @@ class ReportService
             ->whereMonth('expense_date', (int) substr($month, 5, 2))
             ->sum('amount');
 
-        $properties = Property::query()->when($propertyId, fn ($q) => $q->where('id', $propertyId))->get();
-        $totalUnits = $properties->sum(fn ($p) => $p->units()->count());
-        $occupiedUnits = $properties->sum(fn ($p) => $p->units()->where('status', 'occupied')->count());
-        $occupancyRate = $totalUnits > 0 ? round($occupiedUnits / $totalUnits * 100, 1) : 0;
+        $units = Unit::query()
+            ->where('is_deleted', false)
+            ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId));
 
-        $lostRent = (float) $properties->sum(fn ($p) => $p->units()->where('status', 'vacant')->sum('monthly_rent'));
+        $totalUnits = (clone $units)->count();
+        $occupiedUnits = (clone $units)->where('status', 'occupied')->count();
+        $occupancyRate = $totalUnits > 0 ? round($occupiedUnits / $totalUnits * 100, 1) : 0;
+        $lostRent = (float) (clone $units)->where('status', 'vacant')->sum('monthly_rent');
 
         return [
             'expected_rent' => round($expectedRent, 2),
@@ -67,6 +68,7 @@ class ReportService
             $bills = Bill::query()
                 ->where('billing_month', $month)
                 ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
+                ->withSum('allocations as allocated_sum', 'amount')
                 ->get();
 
             $data[] = [
@@ -90,6 +92,7 @@ class ReportService
             $bills = Bill::query()
                 ->where('billing_month', $month->format('Y-m'))
                 ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
+                ->withSum('allocations as allocated_sum', 'amount')
                 ->get();
 
             $expenses = Expense::query()

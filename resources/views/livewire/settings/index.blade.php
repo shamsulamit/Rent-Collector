@@ -1,4 +1,5 @@
 <div>
+    <x-flash />
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight">Settings</h1>
@@ -13,6 +14,7 @@
     <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div class="card p-5">
             <h3 class="font-bold">Company &amp; Billing Defaults</h3>
+            <p class="mt-1 text-sm text-slate-500">Rate tables for gas/water live here. <a href="{{ route('tariffs.index') }}" class="text-brand hover:underline">Manage tariffs</a></p>
             <form wire:submit="save" class="mt-4 space-y-4">
                 <div>
                     <label class="label">Company name</label>

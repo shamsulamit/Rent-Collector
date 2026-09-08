@@ -4,10 +4,8 @@ namespace App\Livewire\Meters;
 
 use App\Models\Meter;
 use App\Models\Property;
-use App\Models\Tariff;
 use App\Models\UtilityType;
 use App\Services\AuditService;
-use App\Services\Electricity\TariffService;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -32,6 +30,7 @@ class MetersIndex extends Component
         'measurement_unit' => 'kWh',
         'installation_date' => '',
         'starting_reading' => 0,
+        'unit_price' => '',
         'status' => 'active',
         'notes' => '',
     ];
@@ -43,11 +42,10 @@ class MetersIndex extends Component
             'form.property_id' => 'required|exists:properties,id',
             'form.unit_id' => 'required|exists:units,id',
             'form.starting_reading' => 'nullable|numeric|min:0',
+            'form.unit_price' => 'nullable|numeric|min:0',
+            'form.installation_date' => 'nullable|date',
         ];
     }
-
-    public array $readings = [];
-    public string $readingMonth = '';
 
     public function updatedFormPropertyId(): void
     {
@@ -67,6 +65,7 @@ class MetersIndex extends Component
             'measurement_unit' => 'kWh',
             'installation_date' => now()->toDateString(),
             'starting_reading' => 0,
+            'unit_price' => '',
             'status' => 'active',
             'notes' => '',
         ];
@@ -78,6 +77,8 @@ class MetersIndex extends Component
         $meter = Meter::findOrFail($id);
         $this->editingId = $id;
         $this->form = $meter->only(array_keys($this->form));
+        $this->form['installation_date'] = optional($meter->installation_date)->toDateString() ?? '';
+        $this->form['unit_price'] = $meter->unit_price !== null ? (string) $meter->unit_price : '';
         $this->showForm = true;
     }
 
@@ -89,6 +90,9 @@ class MetersIndex extends Component
         $unit = \App\Models\Unit::find($payload['unit_id']);
         $payload['floor_id'] = $unit?->floor_id;
         $payload['measurement_unit'] = $payload['measurement_unit'] ?: ($payload['utility'] === 'electricity' ? 'kWh' : 'm³');
+        if (($payload['meter_type'] ?? '') !== 'prepaid' || ($payload['unit_price'] ?? '') === '') {
+            $payload['unit_price'] = null;
+        }
 
         if ($this->editingId) {
             $meter = Meter::findOrFail($this->editingId);

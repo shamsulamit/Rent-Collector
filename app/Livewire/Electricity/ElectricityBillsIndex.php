@@ -140,7 +140,7 @@ class ElectricityBillsIndex extends Component
                 ->where('is_deleted', false)
                 ->where('utility', 'electricity')
                 ->where(fn ($q) => $q->whereNull('meter_type')->orWhere('meter_type', 'postpaid'))
-                ->with('unit')
+                ->with('unit.property')
                 ->orderBy('meter_number')
                 ->get(),
         ])->layout('layouts.app');

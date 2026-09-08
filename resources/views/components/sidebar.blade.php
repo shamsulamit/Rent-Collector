@@ -30,37 +30,29 @@
         </a>
 
         <div class="px-3 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Billing</div>
-        <a href="{{ route('meters.index') }}" class="nav-link {{ request()->routeIs('meters.index') ? 'nav-link-active' : '' }}">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v4m0 4v4m0 4v3m-6 2h12M6 21V3l6 4 6-4v18"/></svg>
-            Meters
+        <a href="{{ route('bills.index') }}" class="nav-link {{ request()->routeIs('bills.*') ? 'nav-link-active' : '' }}">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            Monthly Bills
         </a>
-        <a href="{{ route('meters.bulk-readings') }}" class="nav-link {{ request()->routeIs('meters.bulk-readings') ? 'nav-link-active' : '' }}">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-            Meter Readings
+        <a href="{{ route('payments.index') }}" class="nav-link {{ request()->routeIs('payments.*') ? 'nav-link-active' : '' }}">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2zm3 8h4"/></svg>
+            Payments
         </a>
         <a href="{{ route('electricity.index') }}" class="nav-link {{ request()->routeIs('electricity.*') ? 'nav-link-active' : '' }}">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             Electricity
         </a>
-        <a href="{{ route('utilities.index') }}" class="nav-link {{ request()->routeIs('utilities.*') ? 'nav-link-active' : '' }}">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-13.66l-.7.7M4.04 19.96l-.7.7M21 12h-1M4 12H3m16.66 7.66l-.7-.7M4.04 4.04l-.7-.7M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-            Gas &amp; Water
-        </a>
         <a href="{{ route('prepaid.index') }}" class="nav-link {{ request()->routeIs('prepaid.*') ? 'nav-link-active' : '' }}">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
             Prepaid
         </a>
-        <a href="{{ route('tariffs.index') }}" class="nav-link {{ request()->routeIs('tariffs.*') ? 'nav-link-active' : '' }}">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-6 4h4M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>
-            Tariffs
+        <a href="{{ route('utilities.index') }}" class="nav-link {{ request()->routeIs('utilities.*') ? 'nav-link-active' : '' }}">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-13.66l-.7.7M4.04 19.96l-.7.7M21 12h-1M4 12H3m16.66 7.66l-.7-.7M4.04 4.04l-.7-.7M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            Gas &amp; Water
         </a>
-        <a href="{{ route('bills.index') }}" class="nav-link {{ request()->routeIs('bills.*') ? 'nav-link-active' : '' }}">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-            Bills
-        </a>
-        <a href="{{ route('payments.index') }}" class="nav-link {{ request()->routeIs('payments.*') ? 'nav-link-active' : '' }}">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2zm3 8h4"/></svg>
-            Payments
+        <a href="{{ route('meters.index') }}" class="nav-link {{ request()->routeIs('meters.*') ? 'nav-link-active' : '' }}">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v4m0 4v4m0 4v3m-6 2h12M6 21V3l6 4 6-4v18"/></svg>
+            Meters
         </a>
 
         <div class="px-3 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Operations</div>

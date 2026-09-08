@@ -77,6 +77,14 @@ class Bill extends Model
 
     public function totalPaid(): float
     {
+        if (array_key_exists('allocated_sum', $this->attributes)) {
+            return (float) ($this->attributes['allocated_sum'] ?? 0);
+        }
+
+        if ($this->relationLoaded('allocations')) {
+            return (float) $this->allocations->sum('amount');
+        }
+
         return (float) $this->allocations()->sum('amount');
     }
 

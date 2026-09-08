@@ -73,11 +73,13 @@ class Dashboard extends Component
     {
         $items = [];
 
-        $overdue = Bill::where('billing_month', '<=', $this->month)
+        $overdue = Bill::query()
+            ->where('billing_month', '<=', $this->month)
             ->whereIn('status', ['finalized', 'due', 'partial'])
+            ->when($this->propertyId, fn ($q) => $q->where('property_id', $this->propertyId))
+            ->withSum('allocations as allocated_sum', 'amount')
             ->get()
-            ->filter(fn ($b) => $b->balance() > 0)
-            ->when($this->propertyId, fn ($c) => $c->filter(fn ($b) => $b->property_id === $this->propertyId));
+            ->filter(fn ($b) => $b->balance() > 0);
 
         if ($overdue->count()) {
             $items[] = [
@@ -161,16 +163,11 @@ class Dashboard extends Component
     protected function quickActionList(): array
     {
         return [
-            ['label' => 'Add Property', 'icon' => 'home', 'route' => route('properties.index')],
-            ['label' => 'Add Unit', 'icon' => 'building', 'route' => route('properties.index')],
             ['label' => 'Add Tenant', 'icon' => 'user', 'route' => route('tenants.index')],
-            ['label' => 'New Tenancy', 'icon' => 'key', 'route' => route('tenancies.index')],
             ['label' => 'Record Payment', 'icon' => 'cash', 'route' => route('payments.index')],
-            ['label' => 'Meter Readings', 'icon' => 'gauge', 'route' => route('meters.bulk-readings')],
-            ['label' => 'Add Expense', 'icon' => 'receipt', 'route' => route('expenses.index')],
-            ['label' => 'Electricity Bills', 'icon' => 'doc', 'route' => route('electricity.index')],
+            ['label' => 'Electricity Bill', 'icon' => 'doc', 'route' => route('electricity.index')],
             ['label' => 'Generate Bills', 'icon' => 'doc', 'route' => route('bills.index')],
-            ['label' => 'Backup Now', 'icon' => 'database', 'route' => route('backups.index')],
+            ['label' => 'Add Expense', 'icon' => 'receipt', 'route' => route('expenses.index')],
         ];
     }
 

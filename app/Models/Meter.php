@@ -13,12 +13,13 @@ class Meter extends Model
     protected $fillable = [
         'property_id', 'floor_id', 'unit_id', 'utility_type_id', 'meter_number',
         'provider', 'meter_type', 'utility', 'measurement_unit', 'installation_date',
-        'starting_reading', 'status', 'notes', 'is_deleted',
+        'starting_reading', 'unit_price', 'status', 'notes', 'is_deleted',
     ];
 
     protected $casts = [
         'installation_date' => 'date',
         'starting_reading' => 'decimal:2',
+        'unit_price' => 'decimal:4',
         'is_deleted' => 'boolean',
     ];
 
@@ -65,6 +66,15 @@ class Meter extends Model
     public function prepaidRecharges(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(PrepaidRecharge::class);
+    }
+
+    public function label(): string
+    {
+        return collect([
+            $this->meter_number,
+            $this->unit?->name,
+            $this->property?->name,
+        ])->filter()->implode(' · ');
     }
 
     public function lastReading(?string $beforeMonth = null): ?MeterReading

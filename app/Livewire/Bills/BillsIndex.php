@@ -51,7 +51,7 @@ class BillsIndex extends Component
     {
         $this->authorize('generate', Bill::class);
         $results = app(BillingService::class)->generateMonthlyBills($this->month);
-        session()->flash('message', "Bills generated: {$results['created']} created, {$results['updated']} updated.");
+        notify("Bills generated: {$results['created']} created, {$results['updated']} updated.");
         $this->loadBills();
     }
 
@@ -60,7 +60,7 @@ class BillsIndex extends Component
         $bill = Bill::findOrFail($id);
         $this->authorize('finalize', $bill);
         app(BillingService::class)->finalize($bill);
-        session()->flash('message', 'Bill finalized. It is now immutable.');
+        notify('Bill finalized. It is now immutable.');
     }
 
     public function openPayment(string $id): void
@@ -96,7 +96,7 @@ class BillsIndex extends Component
             'recorded_by' => auth()->id(),
         ], 'oldest-first');
 
-        session()->flash('message', 'Payment recorded and allocated.');
+        notify('Payment recorded and allocated.');
         $this->showPayment = false;
     }
 
@@ -105,14 +105,14 @@ class BillsIndex extends Component
         $bill = Bill::findOrFail($id);
         $this->authorize('delete', $bill);
         app(BillingService::class)->delete($bill);
-        session()->flash('message', 'Bill deleted.');
+        notify('Bill deleted.');
     }
 
     public function sendWhatsApp(string $id, string $template = 'monthly_bill'): void
     {
         $bill = Bill::findOrFail($id);
         app(WhatsAppService::class)->sendBill($template, $bill, Setting::get('whatsapp_locale', 'en'));
-        session()->flash('message', 'WhatsApp message created.');
+        notify('WhatsApp message created.');
     }
 
     public function loadBills(): void
@@ -130,7 +130,8 @@ class BillsIndex extends Component
             ->when($this->search, fn ($q) => $q->whereHas('tenant', fn ($q) =>
                 $q->where('full_name', 'like', "%{$this->search}%"))
                 ->orWhere('bill_no', 'like', "%{$this->search}%"))
-            ->with(['tenant', 'unit.floor', 'property', 'allocations'])
+            ->with(['tenant', 'unit.floor', 'property'])
+            ->withSum('allocations as allocated_sum', 'amount')
             ->orderByDesc('billing_month')
             ->paginate(12);
 

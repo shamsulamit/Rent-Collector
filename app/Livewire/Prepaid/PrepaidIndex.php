@@ -18,6 +18,8 @@ class PrepaidIndex extends Component
     public array $form = [
         'meter_id' => '',
         'recharge_date' => '',
+        'units' => '',
+        'unit_price' => '',
         'amount' => '',
         'reference' => '',
         'provider' => '',
@@ -27,6 +29,8 @@ class PrepaidIndex extends Component
     protected $rules = [
         'form.meter_id' => 'required|exists:meters,id',
         'form.recharge_date' => 'required|date',
+        'form.units' => 'nullable|numeric|min:0',
+        'form.unit_price' => 'nullable|numeric|min:0',
         'form.amount' => 'required|numeric|min:0.01',
     ];
 
@@ -40,7 +44,36 @@ class PrepaidIndex extends Component
         $this->reset('editingId');
         $this->form['recharge_date'] = now()->toDateString();
         $this->form['amount'] = '';
+        $this->form['units'] = '';
+        $this->form['unit_price'] = '';
         $this->showForm = true;
+    }
+
+    public function updatedFormMeterId($value): void
+    {
+        $meter = Meter::find($value);
+        if ($meter && $meter->unit_price !== null) {
+            $this->form['unit_price'] = (string) $meter->unit_price;
+            $this->syncAmount();
+        }
+    }
+
+    public function updatedFormUnits(): void
+    {
+        $this->syncAmount();
+    }
+
+    public function updatedFormUnitPrice(): void
+    {
+        $this->syncAmount();
+    }
+
+    protected function syncAmount(): void
+    {
+        if (! is_numeric($this->form['units'] ?? '') || ! is_numeric($this->form['unit_price'] ?? '')) {
+            return;
+        }
+        $this->form['amount'] = (string) round((float) $this->form['units'] * (float) $this->form['unit_price'], 2);
     }
 
     public function openEdit(string $id): void
@@ -49,6 +82,8 @@ class PrepaidIndex extends Component
         $this->editingId = $id;
         $this->form = $row->only(array_keys($this->form));
         $this->form['recharge_date'] = optional($row->recharge_date)->toDateString();
+        $this->form['units'] = $row->units !== null ? (string) $row->units : '';
+        $this->form['unit_price'] = $row->unit_price !== null ? (string) $row->unit_price : '';
         $this->showForm = true;
     }
 
@@ -67,10 +102,23 @@ class PrepaidIndex extends Component
             ->orderByDesc('created_at')
             ->value('balance_after');
 
+        $previousUnits = PrepaidRecharge::query()
+            ->where('meter_id', $meter->id)
+            ->when($this->editingId, fn ($q) => $q->where('id', '!=', $this->editingId))
+            ->orderByDesc('recharge_date')
+            ->orderByDesc('created_at')
+            ->value('units_after');
+
+        $units = (float) ($this->form['units'] ?: 0);
+        $unitPrice = (float) ($this->form['unit_price'] ?: 0);
+
         $payload = $this->form + [
             'tenant_id' => $tenancy?->tenant_id,
             'unit_id' => $meter->unit_id,
             'provider' => $this->form['provider'] ?: $meter->provider,
+            'units' => $units,
+            'unit_price' => $unitPrice,
+            'units_after' => round((float) ($previousUnits ?? 0) + $units, 2),
             'balance_after' => round((float) ($previous ?? 0) + (float) $this->form['amount'], 2),
             'entered_by' => auth()->id(),
         ];
@@ -113,7 +161,7 @@ class PrepaidIndex extends Component
             'recharges' => $recharges,
             'meters' => Meter::where('is_deleted', false)
                 ->where('meter_type', 'prepaid')
-                ->with('unit')
+                ->with(['unit', 'property'])
                 ->orderBy('meter_number')
                 ->get(),
         ])->layout('layouts.app');

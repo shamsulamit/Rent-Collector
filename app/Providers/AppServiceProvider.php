@@ -34,6 +34,7 @@ use App\Policies\TenantPolicy;
 use App\Policies\UnitPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\VendorPolicy;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -51,6 +52,20 @@ class AppServiceProvider extends ServiceProvider
     {
         Schema::defaultStringLength(191);
         Paginator::useTailwind();
+
+        Model::saving(function (Model $model) {
+            $attributes = $model->getAttributes();
+            $dirty = false;
+            foreach ($attributes as $key => $value) {
+                if ($value === '') {
+                    $attributes[$key] = null;
+                    $dirty = true;
+                }
+            }
+            if ($dirty) {
+                $model->setRawAttributes($attributes, true);
+            }
+        });
 
         Gate::policy(Property::class, PropertyPolicy::class);
         Gate::policy(Unit::class, UnitPolicy::class);

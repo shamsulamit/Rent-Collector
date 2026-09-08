@@ -2,8 +2,8 @@
     <x-flash />
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight">Electricity Bills</h1>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Separate postpaid monthly bills: readings → tariff slabs → charges → tenant bill.</p>
+            <h1 class="text-2xl font-bold tracking-tight">Electricity</h1>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Add the monthly bill amount for each meter.</p>
         </div>
         <button wire:click="openCreate" class="btn-primary">Add electricity bill</button>
     </div>
@@ -37,13 +37,9 @@
                     <th>Month</th>
                     <th>Meter</th>
                     <th>Tenant / Unit</th>
-                    <th class="text-right">Previous</th>
-                    <th class="text-right">Current</th>
-                    <th class="text-right">Usage</th>
-                    <th class="text-right">Energy</th>
-                    <th class="text-right">Total</th>
+                    <th class="text-right">Amount</th>
                     <th>Status</th>
-                    <th class="text-right">Actions</th>
+                    <th class="text-right"></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-ink-700">
@@ -55,10 +51,6 @@
                             <div class="font-medium">{{ $bill->tenant?->full_name ?? '—' }}</div>
                             <div class="text-xs text-slate-400">{{ $bill->unit?->name }} · {{ $bill->property?->name }}</div>
                         </td>
-                        <td class="text-right tabular-nums">{{ number_format($bill->previous_reading, 1) }}</td>
-                        <td class="text-right tabular-nums">{{ number_format($bill->current_reading, 1) }}</td>
-                        <td class="text-right font-semibold tabular-nums">{{ number_format($bill->usage, 1) }}</td>
-                        <td class="text-right tabular-nums">৳{{ number_format($bill->energy_charge, 2) }}</td>
                         <td class="text-right font-semibold tabular-nums">৳{{ number_format($bill->total, 2) }}</td>
                         <td><x-status-badge :label="ucfirst($bill->status)" color="{{ $bill->status }}" /></td>
                         <td>
@@ -78,7 +70,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="10" class="py-10 text-center text-slate-400">No electricity bills. Submit postpaid meter readings to calculate them.</td></tr>
+                    <tr><td colspan="6" class="py-10 text-center text-slate-400">No bills yet. Click Add electricity bill.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -117,7 +109,7 @@
                     <select wire:model="create.meter_id" class="input" required>
                         <option value="">Select meter</option>
                         @foreach ($postpaidMeters as $meter)
-                            <option value="{{ $meter->id }}">{{ $meter->meter_number }} · {{ $meter->unit?->name }}</option>
+                            <option value="{{ $meter->id }}">{{ $meter->label() }}</option>
                         @endforeach
                     </select>
                 </div>

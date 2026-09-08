@@ -36,14 +36,12 @@
             <a href="{{ route('properties.index') }}" class="nav-link">Properties</a>
             <a href="{{ route('tenants.index') }}" class="nav-link">Tenants</a>
             <a href="{{ route('tenancies.index') }}" class="nav-link">Tenancies</a>
-            <a href="{{ route('meters.index') }}" class="nav-link">Meters</a>
-            <a href="{{ route('meters.bulk-readings') }}" class="nav-link">Meter Readings</a>
-            <a href="{{ route('electricity.index') }}" class="nav-link">Electricity</a>
-            <a href="{{ route('utilities.index') }}" class="nav-link">Gas &amp; Water</a>
-            <a href="{{ route('prepaid.index') }}" class="nav-link">Prepaid</a>
-            <a href="{{ route('tariffs.index') }}" class="nav-link">Tariffs</a>
-            <a href="{{ route('bills.index') }}" class="nav-link">Bills</a>
+            <a href="{{ route('bills.index') }}" class="nav-link">Monthly Bills</a>
             <a href="{{ route('payments.index') }}" class="nav-link">Payments</a>
+            <a href="{{ route('electricity.index') }}" class="nav-link">Electricity</a>
+            <a href="{{ route('prepaid.index') }}" class="nav-link">Prepaid</a>
+            <a href="{{ route('utilities.index') }}" class="nav-link">Gas &amp; Water</a>
+            <a href="{{ route('meters.index') }}" class="nav-link">Meters</a>
             <a href="{{ route('expenses.index') }}" class="nav-link">Expenses</a>
             <a href="{{ route('vendors.index') }}" class="nav-link">Vendors</a>
             <a href="{{ route('maintenance.index') }}" class="nav-link">Maintenance</a>
